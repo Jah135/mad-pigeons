@@ -1,4 +1,5 @@
 import pygame
+import pymunk
 
 class Game:
     window_width: int = 100
@@ -12,6 +13,10 @@ class Game:
 
         self.last_dt = 0
         self.running = False
+
+    # mouse events
+    def on_mouse_down(self, left: bool, middle: bool, right: bool): ...
+    def on_mouse_up(self, left: bool, middle: bool, right: bool): ...
 
     def on_event(self, event: pygame.event.Event): ...
     def on_draw(self, out: pygame.Surface): ...
@@ -28,8 +33,12 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit()
-                else:
-                    self.on_event(event=event)
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    self.on_mouse_down(*pygame.mouse.get_pressed())
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.on_mouse_up(*pygame.mouse.get_pressed())
+
+                self.on_event(event=event)
 
             dt = clock.tick(self.target_framerate) / 1000
 
@@ -38,3 +47,15 @@ class Game:
             pygame.display.flip()
 
             self.last_dt = dt
+
+class PhysGame(Game):
+    gravity = 100
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.space = pymunk.Space()
+        self.space.gravity = (0, self.gravity)
+    
+    def on_update(self, dt: float):
+        self.space.step(dt)
