@@ -29,7 +29,7 @@ class TheGame(Game):
 
 
     def on_draw(self, out: pygame.Surface):
-        out.blit(self.background_image)
+        out.blit(self.background_image, dest = (0, 0))
         self.bird.draw(out)
         for i in range(len(BOX_POSITIONS)):
             out.blit(self.box.IMAGE, dest = BOX_POSITIONS[i]) #50x49

@@ -2,7 +2,7 @@ import pygame
 import pymunk
 
 class RedBird:
-    IMAGE = pygame.transform.scale_by(pygame.image.load("./assets/red.png"), 0.35)
+    IMAGE = pygame.transform.scale_by(pygame.image.load("madpigeons/assets/red.png"), 0.35)
 
     def __init__(self, space: pymunk.Space) -> None:
         body = pymunk.Body()
