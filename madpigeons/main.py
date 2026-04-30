@@ -1,59 +1,34 @@
 import pygame
 from vec2 import Vec2
+from game import Game
 
-RESOLUTION = (1000, 2*282)
+class RedBird:
+    IMAGE = pygame.transform.scale_by(pygame.image.load("./assets/red.png"), 0.35)
 
-screen = pygame.display.set_mode(RESOLUTION)
-
-running = True
-
-clock = pygame.Clock()
-
-background = pygame.transform.scale(pygame.image.load("./backgroundbetter.jpg"), RESOLUTION)
-red = pygame.transform.scale_by(pygame.image.load("./red.png"), 0.35)
-
-red_position = Vec2(100, 400)
-red_velocity = Vec2(0, 0)
-
-start_position = Vec2(0, 0)
-end_position = Vec2(0, 0)
-
-def update_physics():
-    global red_position, red_velocity
-
-    red_position += red_velocity * 1/60
-    red_velocity += Vec2(0, 4)
-
-def draw_display():
-    screen.fill("black")
-    screen.blit(background, (0, 0))
-
-    pygame.draw.circle(screen, "red", start_position.t, 4)
-    pygame.draw.circle(screen, "red", end_position.t, 4)
-    pygame.draw.line(screen, "red", start_position.t, end_position.t)
-
-    screen.blit(red, red_position.t)
-
-    pygame.display.flip()
-
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    def __init__(self) -> None:
+        self.position = Vec2(0, 0)
+        self.velocity = Vec2(0, 0)
     
-    left_down = pygame.mouse.get_just_pressed()[0]
-    left_up = pygame.mouse.get_just_released()[0]
+    def update(self, dt: float):
+        self.position += self.velocity * dt
+        self.velocity += Vec2(0, 4)
 
-    if left_down:
-        start_position = Vec2(*pygame.mouse.get_pos())
-    elif left_up:
-        end_position = Vec2(*pygame.mouse.get_pos())
+    def draw(self, screen: pygame.Surface):
+        screen.blit(self.IMAGE, self.position.t)
 
-        red_position = start_position
-        red_velocity = end_position - start_position
+class TheGame(Game):
+    window_width = 1000
+    window_height = 282 * 2
 
-    update_physics()
-    draw_display()
+    def __init__(self) -> None:
+        super().__init__()
 
-    clock.tick(60)
+        self.background_image = pygame.transform.scale(pygame.image.load("./assets/background.jpg"), (self.window_width, self.window_height))
+        self.bird = RedBird()
+
+    def on_draw(self, out: pygame.Surface):
+        out.blit(self.background_image)
+        
+
+game = TheGame()
+game.start()
