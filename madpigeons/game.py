@@ -1,6 +1,7 @@
 import pygame
 import pymunk
 
+
 class Game:
     window_width: int = 100
     window_height: int = 100
@@ -48,6 +49,7 @@ class Game:
 
             self.last_dt = dt
 
+
 class PhysGame(Game):
     gravity = 100
 
@@ -56,6 +58,6 @@ class PhysGame(Game):
 
         self.space = pymunk.Space()
         self.space.gravity = (0, self.gravity)
-    
+
     def on_update(self, dt: float):
         self.space.step(dt)
