@@ -20,16 +20,14 @@ class TheGame(PhysGame):
         entity_scope: list[Entity] = []
 
         red = RedBird(entity_scope, self.space)
-        red.body.apply_force_at_local_point((5000, 0), (10, 0))
+        red.body.position = (500, 300)
 
-        Box(entity_scope, self.space, 50, 50).body.position = (400, 100)
-        Box(entity_scope, self.space, 150, 250).body.position = (375, 0)
-        Box(entity_scope, self.space, 25, 50).body.position = (300, 0)
+        Box(entity_scope, self.space, 250, 250).body.position = (510, -400)
 
         floor_segment = pymunk.Segment(
             self.space.static_body,
-            (0, self.window_height * 0.82),
-            (self.window_width, self.window_height * 0.82),
+            (-1e4, self.window_height * 0.82),
+            (1e4, self.window_height * 0.82),
             20,
         )
         floor_segment.density = 1
