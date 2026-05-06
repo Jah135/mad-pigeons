@@ -8,6 +8,8 @@ class TheGame(PhysGame):
     window_width = 1000
     window_height = 282 * 2
     gravity = 500
+    title = "Mad Pigeons™️ (not angry birds)"
+    icon = RedBird.IMAGE
 
     def __init__(self) -> None:
         super().__init__()

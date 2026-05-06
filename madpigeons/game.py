@@ -6,9 +6,16 @@ class Game:
     window_width: int = 100
     window_height: int = 100
     target_framerate: int = 60
+    title: str = "Game"
+    icon: pygame.Surface | None = None
 
     def __init__(self) -> None:
         pygame.init()
+
+        pygame.display.set_caption(self.title)
+
+        if self.icon:
+            pygame.display.set_icon(self.icon)
 
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
 
