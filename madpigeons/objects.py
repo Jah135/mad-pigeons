@@ -1,12 +1,17 @@
-from pygame import draw
-from math import degrees
-
 import pygame
 import pymunk
+
+from typing import Sequence
+from pygame import draw
+from math import degrees
+from pymunk import Vec2d
+
+import assets
 
 
 class Entity:
     body: pymunk.Body
+    image: pygame.Surface
 
     def __init__(self, scope: list["Entity"], space: pymunk.Space) -> None:
         self.body = pymunk.Body()
@@ -14,64 +19,101 @@ class Entity:
         space.add(self.body)
         scope.append(self)
 
-    def draw(self, screen: pygame.Surface): ...
+    def draw(self, screen: pygame.Surface):
+        rotated = pygame.transform.rotate(self.image, -degrees(self.body.angle))
+        screen.blit(rotated, self.body.position - Vec2d(*rotated.size) / 2)
 
 
+## Bird presets
 class RedBird(Entity):
-    IMAGE = pygame.transform.scale_by(pygame.image.load("./assets/red.png"), 0.35)
+    image = assets.RED_BIRD
 
     def __init__(self, scope: list[Entity], space: pymunk.Space) -> None:
         super().__init__(scope, space)
 
-        shape = pymunk.Circle(self.body, 20)
-        shape.mass = 0.3
+        shape = pymunk.Circle(self.body, 18)
+        shape.density = 0.3
         shape.friction = 0.4
 
         space.add(shape)
 
-    def draw(self, screen: pygame.Surface):
-        rotated = pygame.transform.rotate(self.IMAGE, -degrees(self.body.angle))
 
-        screen.blit(
-            rotated,
-            (
-                self.body.position.x - rotated.width / 2,
-                self.body.position.y - rotated.height / 2,
-            ),
+## Wood presets
+class WoodBox(Entity):
+    def __init__(self, scope: list[Entity], space: pymunk.Space, size: int) -> None:
+
+        super().__init__(
+            scope,
+            space,
         )
-
-
-class Box(Entity):
-    def __init__(
-        self, scope: list[Entity], space: pymunk.Space, width: int, height: int
-    ) -> None:
-        super().__init__(scope, space)
 
         shape = pymunk.Poly(
             self.body,
             (
-                (-width / 2, -height / 2),
-                (width / 2, -height / 2),
-                (-width / 2, height / 2),
-                (width / 2, height / 2),
+                (-size // 2, -size // 2),
+                (size // 2, -size // 2),
+                (-size // 2, size // 2),
+                (size // 2, size // 2),
             ),
         )
-        shape.mass = 1
-        shape.friction = 0.5
+        shape.density = 0.6
+        shape.friction = 0.8
 
         space.add(shape)
 
-        self.shape = shape
+        self.image = pygame.transform.scale(assets.WOOD_BOX, (size, size))
 
-        self.width = width
-        self.height = height
 
-    def draw(self, screen: pygame.Surface):
-        draw.polygon(
-            screen,
-            "black",
-            [
-                v.rotated(self.body.angle) + self.body.position
-                for v in self.shape.get_vertices()
-            ],
+class WoodWedge(Entity):
+    def __init__(self, scope: list[Entity], space: pymunk.Space, size: int) -> None:
+        super().__init__(
+            scope,
+            space,
         )
+
+        shape = pymunk.Poly(
+            self.body,
+            (
+                (-size // 2, -size // 2),
+                (-size // 2, size // 2),
+                (size // 2, size // 2),
+            ),
+        )
+        shape.density = 0.6
+        shape.friction = 0.8
+
+        space.add(shape)
+
+        self.image = pygame.transform.scale(assets.WOOD_WEDGE, (size, size))
+
+
+class WoodTriangle(Entity):
+    def __init__(self, scope: list[Entity], space: pymunk.Space, size: int) -> None:
+        super().__init__(
+            scope,
+            space,
+        )
+
+        shape = pymunk.Poly(
+            self.body,
+            ((-size // 2, size // 2), (size // 2, size // 2), (0, -size // 2)),
+        )
+        shape.density = 0.6
+        shape.friction = 0.8
+
+        space.add(shape)
+
+        self.image = pygame.transform.scale(assets.WOOD_TRIANGLE, (size, size))
+
+
+class WoodBall(Entity):
+    def __init__(self, scope: list[Entity], space: pymunk.Space, radius: int) -> None:
+        super().__init__(scope, space)
+
+        shape = pymunk.Circle(self.body, radius / 2)
+        shape.density = 0.6
+        shape.friction = 0.8
+
+        space.add(shape)
+
+        self.image = pygame.transform.scale(assets.WOOD_BALL, (radius, radius))
