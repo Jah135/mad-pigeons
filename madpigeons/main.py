@@ -21,15 +21,13 @@ class TheGame(PhysGame):
             (self.window_width, self.window_height),
         )
 
-        entity_scope: list[objects.Entity] = []
+        scope = objects.EntityScope(self.space)
 
-        objects.RedBird(entity_scope, self.space).body.position = (500, 300)
+        red = objects.RedBird(scope)
+        red.body.position = (500, 300)
 
-        for i in range(10):
-            objects.WoodBox(entity_scope, self.space, 40).body.position = (
-                550,
-                350 - i * 20,
-            )
+        for i in range(20):
+            objects.WoodBall(scope, 30 + i * 8).body.position = (500, 300 - 30 * i)
 
         floor_segment = pymunk.Segment(
             self.space.static_body,
@@ -41,15 +39,12 @@ class TheGame(PhysGame):
         floor_segment.friction = 0.6
 
         self.space.add(floor_segment)
-        self.entities = entity_scope
-
-    def on_mouse_down(self, left: bool, middle: bool, right: bool):
-        pass
+        self.scope = scope
 
     def on_draw(self, out: pygame.Surface):
         out.blit(self.background_image)
 
-        for entity in self.entities:
+        for entity in self.scope.entities:
             entity.draw(out)
 
 
