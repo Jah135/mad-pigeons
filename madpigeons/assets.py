@@ -1,7 +1,12 @@
 import pygame
+import os
+
+os.chdir("C:\\Users\\ehopper848\\Documents\\GitHub\\mad-pigeons\\madpigeons")
 
 # backgrounds
-BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background2.png")
+BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background1.jpg")
+BACKGROUND_2 = pygame.image.load("./resources/backgrounds/background2.png")
+BACKGROUND_3 = pygame.image.load("./resources/backgrounds/background3.png")
 
 # birds
 BIRD_SPRITESHEET = pygame.image.load("./resources/spritesheets/birds.png")
@@ -10,6 +15,8 @@ RED_BIRD = pygame.transform.scale_by(
 )
 
 # pigs
+PIG_SPRITESHEET = pygame.image.load("./resources/spritesheets/pigs.png")
+PIG_SMILING = PIG_SPRITESHEET.subsurface(pygame.Rect(576, 622, 80, 80))
 
 # objects
 WOOD_SPRITESHEET = pygame.image.load("./resources/spritesheets/wood.png")

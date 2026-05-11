@@ -29,6 +29,9 @@ class Entity:
 
 
 class RigidEntity(Entity):
+    display_image: pygame.Surface = assets.RED_BIRD
+    display_name: str = "RigidEntity"
+
     body: pymunk.Body
     image: pygame.Surface
 
@@ -57,8 +60,27 @@ class RedBird(RigidEntity):
         scope.space.add(shape)
 
 
+## Pig presets
+class Piggy(RigidEntity):
+    def __init__(self, scope: EntityScope, radios: int):
+        super().__init__(scope)
+
+        self.image = pygame.transform.scale(
+            assets.PIG_SMILING, (radios * 2, radios * 2)
+        )
+
+        shape = pymunk.Circle(self.body, radios)
+        shape.density = 0.3
+        shape.friction = 0.4
+
+        scope.space.add(shape)
+
+
 ## Wood presets
 class WoodBox(RigidEntity):
+    display_image = assets.WOOD_BOX
+    display_name = "Wood Box"
+
     def __init__(self, scope: EntityScope, size: int):
         super().__init__(scope)
 
@@ -160,6 +182,9 @@ class WoodTriangle(RigidEntity):
 
 
 class WoodBall(RigidEntity):
+    display_image = assets.WOOD_BALL
+    display_name = "Wood Ball"
+
     def __init__(self, scope: EntityScope, radius: int):
         super().__init__(scope)
 
