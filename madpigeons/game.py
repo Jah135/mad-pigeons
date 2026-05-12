@@ -25,9 +25,11 @@ class Game:
     # mouse events
     def on_mouse_down(self, left: bool, middle: bool, right: bool): ...
     def on_mouse_up(self, left: bool, middle: bool, right: bool): ...
+    def on_mouse_move(self): ...
 
     def on_event(self, event: pygame.event.Event): ...
     def on_draw(self, out: pygame.Surface): ...
+    def on_draw_interface(self, out: pygame.Surface): ...
     def on_update(self, dt: float): ...
 
     def quit(self):
@@ -39,19 +41,22 @@ class Game:
 
         while self.running:
             for event in pygame.event.get():
+                self.on_event(event=event)
+
                 if event.type == pygame.QUIT:
                     self.quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.on_mouse_down(*pygame.mouse.get_pressed())
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.on_mouse_up(*pygame.mouse.get_pressed())
-
-                self.on_event(event=event)
+                elif event.type == pygame.MOUSEMOTION:
+                    self.on_mouse_move()
 
             dt = clock.tick(self.target_framerate) / 1000
 
             self.on_update(dt=dt)
             self.on_draw(out=self.screen)
+            self.on_draw_interface(out=self.screen)
             pygame.display.flip()
 
             self.last_dt = dt

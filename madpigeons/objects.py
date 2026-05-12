@@ -1,5 +1,5 @@
 import pygame
-import pygame.draw as d
+import pygame.draw as draw
 import pymunk
 import pymunk.constraints as joints
 
@@ -26,6 +26,7 @@ class Entity:
         scope.add(self)
 
     def draw(self, screen: pygame.Surface): ...
+    def debug_draw(self, screen: pygame.Surface): ...
 
 
 class RigidEntity(Entity):
@@ -62,18 +63,23 @@ class RedBird(RigidEntity):
 
 ## Pig presets
 class Piggy(RigidEntity):
-    def __init__(self, scope: EntityScope, radios: int):
+    def __init__(self, scope: EntityScope, radius: int):
         super().__init__(scope)
 
         self.image = pygame.transform.scale(
-            assets.PIG_SMILING, (radios * 2, radios * 2)
+            assets.PIG_SMILING, (radius * 2, radius * 2)
         )
 
-        shape = pymunk.Circle(self.body, radios)
+        self.radius = radius
+
+        shape = pymunk.Circle(self.body, radius)
         shape.density = 0.3
         shape.friction = 0.4
 
         scope.space.add(shape)
+
+    def debug_draw(self, screen: pygame.Surface):
+        draw.circle(screen, "blue", self.body.position, self.radius, 1)
 
 
 ## Wood presets

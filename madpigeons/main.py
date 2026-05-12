@@ -1,8 +1,10 @@
 import pygame
 import pymunk
 from typing import Callable
+from pygame import draw
 
 from game import PhysGame
+from ui import UIElement, Image, UIDim2, Vec2
 import objects
 import assets
 
@@ -19,7 +21,9 @@ class InventoryItem:
         self.image = image
 
 
-INVENTORY: list[InventoryItem] = [
+IS_DEBUG = False
+
+HOTBAR: list[InventoryItem] = [
     InventoryItem(
         lambda scope: objects.WoodBall(scope, 30), "Wood Ball", assets.WOOD_BALL
     ),
@@ -42,7 +46,8 @@ INVENTORY: list[InventoryItem] = [
         assets.PIG_SMILING,
     ),
 ]
-INVENTORY_ITEM_SIZE = 50
+HOTBAR_SLOT_SIZE = 70
+HOTBAR_SLOT_PADDING = 4
 
 
 class TheGame(PhysGame):
@@ -58,6 +63,12 @@ class TheGame(PhysGame):
         self.background_image = pygame.transform.scale(
             assets.BACKGROUND_1,
             (self.window_width, self.window_height),
+        )
+
+        screen_container = UIElement(size=UIDim2(self.window_width, self.window_height))
+
+        self.test_image = Image(
+            screen_container, size=UIDim2(64, 32), image=assets.RED_BIRD
         )
 
         scope = objects.EntityScope(self.space)
@@ -79,48 +90,52 @@ class TheGame(PhysGame):
         self.space.add(floor_segment)
         self.scope = scope
 
+    def on_mouse_move(self):
+        self.test_image.size = UIDim2(*pygame.mouse.get_pos())
+        self.test_image.render()
+
     def on_draw(self, out: pygame.Surface):
         out.blit(self.background_image)
 
         for entity in self.scope.entities:
             entity.draw(out)
+            if IS_DEBUG:
+                entity.debug_draw(out)
 
-        total_width = len(INVENTORY * INVENTORY_ITEM_SIZE)
+    def on_draw_interface(self, out: pygame.Surface):
+        total_width = len(HOTBAR) * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING)
 
-        pygame.draw.line(
-            out,
-            "blue",
-            (self.window_width / 2, 0),
-            (self.window_width / 2, self.window_height),
-        )
+        self.test_image.draw(out)
+        self.test_image.debug_draw(out)
 
-        for index, item in enumerate(INVENTORY):
+        for index, item in enumerate(HOTBAR):
             scaled_image = pygame.transform.scale_by(
-                item.image, INVENTORY_ITEM_SIZE / max(*item.image.size)
+                item.image, HOTBAR_SLOT_SIZE / max(*item.image.size)
+            )
+
+            x = (
+                self.window_width / 2
+                + (index * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING))
+                - (total_width / 2)
+            ) + HOTBAR_SLOT_PADDING / 2
+            y = (
+                self.window_height
+                - HOTBAR_SLOT_SIZE
+                - 10
+                + (HOTBAR_SLOT_SIZE / 2 - scaled_image.height / 2)
             )
 
             out.blit(
                 scaled_image,
-                (
-                    (self.window_width / 2)
-                    - total_width
-                    - (index * INVENTORY_ITEM_SIZE),
-                    self.window_height
-                    - INVENTORY_ITEM_SIZE / 2
-                    - scaled_image.height / 2,
-                ),
+                (x, y),
             )
-            pygame.draw.circle(
-                out,
-                "red",
-                (
-                    self.window_width / 2
-                    + total_width / 2
-                    - (index + 1) * INVENTORY_ITEM_SIZE,
-                    20,
-                ),
-                4,
-            )
+            if IS_DEBUG:
+                draw.rect(
+                    out,
+                    "pink",
+                    pygame.Rect(x, y, *scaled_image.size),
+                    width=1,
+                )
 
 
 game = TheGame()
