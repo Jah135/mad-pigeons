@@ -56,7 +56,18 @@ HOTBAR_SLOT_SIZE = 70
 HOTBAR_SLOT_PADDING = 4
 
 
-class TheGame(PhysGame):
+
+from box import Box
+
+GROUND_Y = 349
+BOX_POSITIONS = [
+    (200, GROUND_Y),        
+    (350, GROUND_Y),        
+    (500, GROUND_Y - 80),  
+    (650, GROUND_Y),        
+    (800, GROUND_Y - 120)
+    ]
+class TheGame(Game):
     window_width = 1000
     window_height = 564
     gravity = 500
@@ -140,6 +151,12 @@ class TheGame(PhysGame):
         if self.current_dragging_item != None:
             draw.circle(out, "red", pygame.mouse.get_pos(), 4)
 
+    def on_draw(self, out: pygame.Surface):
+        out.blit(self.background_image, dest = (0, 0))
+        self.bird.draw(out)
+        for i in range(len(BOX_POSITIONS)):
+            out.blit(self.box.IMAGE, dest = BOX_POSITIONS[i]) #50x49
+        
 
 game = TheGame()
 game.start()
