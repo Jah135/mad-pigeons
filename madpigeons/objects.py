@@ -1,9 +1,10 @@
 import pygame
-import pygame.draw as draw
 import pymunk
 
 from math import degrees
 from pymunk import Vec2d
+
+from pygame import draw, transform
 
 import assets
 
@@ -39,7 +40,7 @@ class RigidEntity(Entity):
         scope.space.add(self.body)
 
     def draw(self, screen: pygame.Surface):
-        rotated = pygame.transform.rotate(self.image, -degrees(self.body.angle))
+        rotated = transform.rotate(self.image, -degrees(self.body.angle))
         screen.blit(rotated, self.body.position - Vec2d(*rotated.size) / 2)
 
 
@@ -58,7 +59,6 @@ class RedBird(RigidEntity):
 
 
 ## Pig presets
-
 STANDARD_PIG_RADIUS = 20
 
 
@@ -68,7 +68,7 @@ class Piggy(RigidEntity):
 
         radius = scale * STANDARD_PIG_RADIUS
 
-        self.image = pygame.transform.scale(
+        self.image = transform.scale(
             assets.PIG_SMILING,
             (radius * 2, radius * 2),
         )
@@ -113,7 +113,7 @@ class WoodBox(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(assets.WOOD_BOX, (size, size))
+        self.image = transform.scale(assets.WOOD_BOX, (size, size))
 
 
 class WoodPlankThick(RigidEntity):
@@ -136,9 +136,7 @@ class WoodPlankThick(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(
-            assets.WOOD_RECTANGLE, (length, length // 2)
-        )
+        self.image = transform.scale(assets.WOOD_RECTANGLE, (length, length // 2))
 
 
 class WoodPlankThin(RigidEntity):
@@ -161,11 +159,11 @@ class WoodPlankThin(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(assets.WOOD_PLANK, (length, length // 8))
+        self.image = transform.scale(assets.WOOD_PLANK, (length, length // 8))
 
 
 class WoodWedge(RigidEntity):
-    def __init__(self, scope: EntityScope, scale: float):
+    def __init__(self, scope: EntityScope, scale: float, mirrored: bool = False):
         super().__init__(scope)
 
         size = STANDARD_BOX_SIZE * scale
@@ -173,9 +171,9 @@ class WoodWedge(RigidEntity):
         shape = pymunk.Poly(
             self.body,
             (
-                (-size // 2, -size // 2),
-                (-size // 2, size // 2),
-                (size // 2, size // 2),
+                ((-1 if mirrored else 1) * -size // 2, -size // 2),
+                ((-1 if mirrored else 1) * -size // 2, size // 2),
+                ((-1 if mirrored else 1) * size // 2, size // 2),
             ),
         )
         shape.density = 0.6
@@ -183,7 +181,9 @@ class WoodWedge(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(assets.WOOD_WEDGE, (size, size))
+        self.image = transform.flip(
+            transform.scale(assets.WOOD_WEDGE, (size, size)), mirrored, False
+        )
 
 
 class WoodTriangle(RigidEntity):
@@ -201,7 +201,7 @@ class WoodTriangle(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(assets.WOOD_TRIANGLE, (size, size))
+        self.image = transform.scale(assets.WOOD_TRIANGLE, (size, size))
 
 
 class WoodBall(RigidEntity):
@@ -216,4 +216,4 @@ class WoodBall(RigidEntity):
 
         scope.space.add(shape)
 
-        self.image = pygame.transform.scale(assets.WOOD_BALL, (radius * 2, radius * 2))
+        self.image = transform.scale(assets.WOOD_BALL, (radius * 2, radius * 2))

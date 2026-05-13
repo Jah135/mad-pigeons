@@ -4,7 +4,7 @@ from typing import Callable
 from pygame import draw
 
 from game import PhysGame
-from ui import UIElement, Image, UIDim2, Vec2
+from ui import UIElement, Label, Frame, Image, UIDim2, Vec2
 import objects
 import assets
 
@@ -24,26 +24,24 @@ class InventoryItem:
 IS_DEBUG = False
 
 HOTBAR: list[InventoryItem] = [
-    InventoryItem(lambda scope: objects.WoodBox(scope, 1), "Wood Box", assets.WOOD_BOX),
+    InventoryItem(lambda scope: objects.WoodBox(scope, 1), "Box", assets.WOOD_BOX),
+    InventoryItem(lambda scope: objects.WoodBall(scope, 1), "Ball", assets.WOOD_BALL),
     InventoryItem(
-        lambda scope: objects.WoodBall(scope, 1), "Wood Ball", assets.WOOD_BALL
-    ),
-    InventoryItem(
-        lambda scope: objects.WoodPlankThin(scope, 1), "Wood Plank", assets.WOOD_PLANK
+        lambda scope: objects.WoodPlankThin(scope, 1), "Thin Plank", assets.WOOD_PLANK
     ),
     InventoryItem(
         lambda scope: objects.WoodPlankThick(scope, 1),
-        "Wood Plank",
+        "Thick Plank",
         assets.WOOD_RECTANGLE,
     ),
     InventoryItem(
         lambda scope: objects.WoodTriangle(scope, 1),
-        "Wood Triangle",
+        "Triangle",
         assets.WOOD_TRIANGLE,
     ),
     InventoryItem(
-        lambda scope: objects.WoodWedge(scope, 1),
-        "Wood Wedge",
+        lambda scope: objects.WoodWedge(scope, 1, True),
+        "Wedge",
         assets.WOOD_WEDGE,
     ),
     InventoryItem(
@@ -56,18 +54,7 @@ HOTBAR_SLOT_SIZE = 70
 HOTBAR_SLOT_PADDING = 4
 
 
-
-from box import Box
-
-GROUND_Y = 349
-BOX_POSITIONS = [
-    (200, GROUND_Y),        
-    (350, GROUND_Y),        
-    (500, GROUND_Y - 80),  
-    (650, GROUND_Y),        
-    (800, GROUND_Y - 120)
-    ]
-class TheGame(Game):
+class TheGame(PhysGame):
     window_width = 1000
     window_height = 564
     gravity = 500
@@ -87,7 +74,7 @@ class TheGame(Game):
 
         hotbar_container = UIElement(
             screen_container,
-            size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.5, 0),
+            size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.6, 0),
             position=UIDim2(0, -5, 0.5, 1),
             anchor_point=Vec2(0.5, 1),
         )
@@ -97,18 +84,35 @@ class TheGame(Game):
         self.current_dragging_item: InventoryItem | None = None
 
         for index, item in enumerate(HOTBAR):
-            image = Image(
+            frame = Frame(
                 hotbar_container,
                 Vec2(index / (hotbar_count - 1), 0),
                 UIDim2(0, 0, index / (hotbar_count - 1), 0),
                 UIDim2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE),
+            )
+            frame.background_color = (0, 0, 0, 80)
+            frame._rerender()
+
+            Image(
+                frame,
+                Vec2(0.5, 0.5),
+                UIDim2(0, 0, 0.5, 0.5),
+                UIDim2(0, 0, 0.9, 0.9),
                 image=item.image,
+            )
+
+            Label(
+                frame,
+                Vec2(0, 1),
+                size=UIDim2(0, 20, 1, 0),
+                text=item.name,
+                text_color=(0, 0, 0, 255),
             )
 
             def on_mouse_down(*_, item=item):
                 self.current_dragging_item = item
 
-            image.mouse_down.connect(on_mouse_down)
+            frame.mouse_down.connect(on_mouse_down)
 
         scope = objects.EntityScope(self.space)
 
@@ -151,12 +155,6 @@ class TheGame(Game):
         if self.current_dragging_item != None:
             draw.circle(out, "red", pygame.mouse.get_pos(), 4)
 
-    def on_draw(self, out: pygame.Surface):
-        out.blit(self.background_image, dest = (0, 0))
-        self.bird.draw(out)
-        for i in range(len(BOX_POSITIONS)):
-            out.blit(self.box.IMAGE, dest = BOX_POSITIONS[i]) #50x49
-        
 
 game = TheGame()
 game.start()

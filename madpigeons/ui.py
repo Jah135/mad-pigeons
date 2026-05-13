@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import Optional, Callable
+from typing import Optional, Callable, Literal
 
 import pygame
-from pygame import draw
+from pygame import draw, font
 
 
 class Vec2:
@@ -69,12 +69,17 @@ class Signal:
             callback(*args)
 
 
+XAlignment = Literal["left"] | Literal["center"] | Literal["right"]
+YAlignment = Literal["top"] | Literal["center"] | Literal["bottom"]
+
+
 class UIElement:
     parent: Optional[UIElement]
 
     anchor_point: Vec2
     position: UIDim2
     size: UIDim2
+    visible: bool
 
     def __init__(
         self,
@@ -89,6 +94,7 @@ class UIElement:
         self.anchor_point = anchor_point
         self.position = position
         self.size = size
+        self.visible = True
 
         self.mouse_down = Signal()
         self.mouse_up = Signal()
@@ -153,12 +159,97 @@ class UIElement:
         for child in self.children:
             child._on_mouse_up(x, y)
 
-    def draw(self, out: pygame.Surface): ...
+    def _draw(self, out: pygame.Surface): ...
     def draw_all_children(self, out: pygame.Surface):
-        self.draw(out)
+        if not self.visible:
+            return
+
+        self._draw(out)
 
         for child in self.children:
             child.draw_all_children(out)
+
+
+class Label(UIElement):
+    def __init__(
+        self,
+        parent: UIElement | None = None,
+        anchor_point: Vec2 = Vec2(),
+        position: UIDim2 = UIDim2(),
+        size: UIDim2 = UIDim2(),
+        text: str = "Label",
+        text_size: int = 16,
+        text_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+        text_font: str | None = None,
+        text_x_alignment: XAlignment = "center",
+        text_y_alignment: YAlignment = "center",
+    ) -> None:
+        super().__init__(parent, anchor_point, position, size)
+
+        self.text = text
+        self.text_size = text_size
+        self.text_color = text_color
+        self.text_x_alignment = text_x_alignment
+        self.text_y_alignment = text_y_alignment
+
+        self._font = font.Font(text_font, self.text_size)
+
+        self._rerender()
+
+    def _rerender(self):
+        total_width, total_height = self.absolute_size.tup
+
+        surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
+
+        txt_surface = self._font.render(self.text, True, self.text_color)
+
+        rel_x_pos = 0
+        rel_y_pos = 0
+
+        if self.text_x_alignment == "center":
+            rel_x_pos = total_width / 2 - txt_surface.width / 2
+        elif self.text_x_alignment == "right":
+            rel_x_pos = total_width - txt_surface.width
+
+        if self.text_y_alignment == "center":
+            rel_y_pos = total_height / 2 - txt_surface.height / 2
+        elif self.text_y_alignment == "bottom":
+            rel_y_pos = total_height - txt_surface.height
+
+        surface.blit(txt_surface, (rel_x_pos, rel_y_pos))
+
+        self._surface = surface
+
+    def _draw(self, out: pygame.Surface):
+        out.blit(self._surface, self.absolute_position.tup)
+
+
+class Frame(UIElement):
+    def __init__(
+        self,
+        parent: UIElement | None = None,
+        anchor_point: Vec2 = Vec2(),
+        position: UIDim2 = UIDim2(),
+        size: UIDim2 = UIDim2(),
+    ) -> None:
+        super().__init__(parent, anchor_point, position, size)
+
+        self.background_color: tuple[int, int, int, int] = (255, 255, 255, 255)
+
+        self._rerender()
+
+    def _rerender(self):
+        surface = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
+        surface.fill(self.background_color)
+
+        self._surface = surface
+
+    def _draw(self, out: pygame.Surface):
+        out.blit(self._surface, self.absolute_position.tup)
+
+    def set_background_color(self, new_background_color: tuple[int, int, int, int]):
+        self.background_color = new_background_color
+        self._rerender()
 
 
 class Image(UIElement):
@@ -172,14 +263,9 @@ class Image(UIElement):
     ) -> None:
         super().__init__(parent, anchor_point, position, size)
 
-        self.image = image
-        self.rerender()
+        self.set_image(image)
 
-    def set_image(self, new_image: pygame.Surface):
-        self.image = new_image
-        self.rerender()
-
-    def rerender(self):
+    def _rerender(self):
         rendered = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
         scaled_image = pygame.transform.scale_by(
             self.image, min(self.absolute_size.tup) / max(self.image.size)
@@ -188,7 +274,11 @@ class Image(UIElement):
             scaled_image, ((self.absolute_size / 2) - Vec2(*scaled_image.size) / 2).tup
         )
 
-        self.rendered = rendered
+        self._surface = rendered
 
-    def draw(self, out: pygame.Surface):
-        out.blit(self.rendered, self.absolute_position.tup)
+    def _draw(self, out: pygame.Surface):
+        out.blit(self._surface, self.absolute_position.tup)
+
+    def set_image(self, new_image: pygame.Surface):
+        self.image = new_image
+        self._rerender()

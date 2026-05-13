@@ -1,7 +1,7 @@
 import pygame
 import os
 
-os.chdir("C:\\Users\\nbradberry425\\Documents\\GitHub\\mad-pigeons\\madpigeons")
+os.chdir("C:\\Users\\ehopper848\\Documents\\GitHub\\mad-pigeons\\madpigeons")
 
 # backgrounds
 BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background1.jpg")
@@ -17,15 +17,15 @@ RED_BIRD = pygame.transform.scale_by(
 # pigs
 PIG_SPRITESHEET = pygame.image.load("./resources/spritesheets/pigs.png")
 
-#King Pig
-
+# King Pig
 KING_PIG = PIG_SPRITESHEET.subsurface(pygame.Rect(679, 2, 129, 144))
-KING_PIG_EYES_CLOSED = PIG_SPRITESHEET.subsurface(pygame.Rect(543, 2, 129, 144))
-KING_PIG_SMILING = PIG_SPRITESHEET.subsurface(pygame.Rect(409, 2, 129, 144))
-KING_PIG_HURT = PIG_SPRITESHEET.subsurface(pygame.Rect(272, 2, 129, 144))
-KING_PIG_HURT_EYES_CLOSED = PIG_SPRITESHEET.subsurface(pygame.Rect(137, 2, 129, 144))
-KING_PIG_HURT_TONGUE_OUT = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 12, 129, 133))
-KING_PIG_HURT_TONGUE_OUT_EYES_CLOSED = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 2, 130, 145))
+KING_PIG_BLINK = PIG_SPRITESHEET.subsurface(pygame.Rect(543, 2, 129, 144))
+KING_PIG_LOSE = PIG_SPRITESHEET.subsurface(pygame.Rect(409, 2, 129, 144))
+KING_PIG_HURT_1 = PIG_SPRITESHEET.subsurface(pygame.Rect(272, 2, 129, 144))
+KING_PIG_HURT_2 = PIG_SPRITESHEET.subsurface(pygame.Rect(137, 2, 129, 144))
+KING_PIG_HURT_3 = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 12, 129, 133))
+KING_PIG_HURT_4 = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 2, 130, 145))
+
 
 PIG_SMILING = PIG_SPRITESHEET.subsurface(pygame.Rect(576, 622, 80, 80))
 
