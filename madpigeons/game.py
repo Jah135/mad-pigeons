@@ -23,8 +23,8 @@ class Game:
         self.running = False
 
     # mouse events
-    def on_mouse_down(self, left: bool, middle: bool, right: bool): ...
-    def on_mouse_up(self, left: bool, middle: bool, right: bool): ...
+    def on_mouse_left_down(self): ...
+    def on_mouse_left_up(self): ...
     def on_mouse_move(self): ...
 
     def on_event(self, event: pygame.event.Event): ...
@@ -45,10 +45,10 @@ class Game:
 
                 if event.type == pygame.QUIT:
                     self.quit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    self.on_mouse_down(*pygame.mouse.get_pressed())
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    self.on_mouse_up(*pygame.mouse.get_pressed())
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    self.on_mouse_left_down()
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    self.on_mouse_left_up()
                 elif event.type == pygame.MOUSEMOTION:
                     self.on_mouse_move()
 

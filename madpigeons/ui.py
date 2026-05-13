@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Callable
 
 import pygame
 from pygame import draw
@@ -57,6 +57,18 @@ class UIDim2:
         return Vec2(self.x.scale, self.y.scale)
 
 
+class Signal:
+    def __init__(self) -> None:
+        self.callbacks = []
+
+    def connect(self, callback: Callable):
+        self.callbacks.append(callback)
+
+    def fire(self, *args):
+        for callback in self.callbacks:
+            callback(*args)
+
+
 class UIElement:
     parent: Optional[UIElement]
 
@@ -71,11 +83,17 @@ class UIElement:
         position: UIDim2 = UIDim2(),
         size: UIDim2 = UIDim2(),
     ) -> None:
-        self.parent = parent
+        self.parent: Optional[UIElement] = None
+        self.children: set[UIElement] = set()
 
         self.anchor_point = anchor_point
         self.position = position
         self.size = size
+
+        self.mouse_down = Signal()
+        self.mouse_up = Signal()
+
+        self.set_parent(parent)
 
     @property
     def absolute_size(self) -> Vec2:
@@ -99,8 +117,48 @@ class UIElement:
     def rect(self) -> pygame.Rect:
         return pygame.Rect(self.absolute_position.tup, self.absolute_size.tup)
 
-    def debug_draw(self, out: pygame.Surface):
-        draw.rect(out, "red", self.rect, 1)
+    def set_parent(self, new_parent: Optional[UIElement]):
+        cur_parent = self.parent
+
+        if cur_parent != None:
+            cur_parent.children.remove(self)
+
+        self.parent = new_parent
+
+        if new_parent != None:
+            new_parent.children.add(self)
+
+    def is_in_bounds(self, x: int, y: int):
+        abs_size = self.absolute_size
+        abs_pos = self.absolute_position
+
+        return (
+            x > abs_pos.x
+            and x < abs_pos.x + abs_size.x
+            and y > abs_pos.y
+            and y < abs_pos.y + abs_size.y
+        )
+
+    def _on_mouse_down(self, x: int, y: int):
+        if self.is_in_bounds(x, y):
+            self.mouse_down.fire(x, y)
+
+        for child in self.children:
+            child._on_mouse_down(x, y)
+
+    def _on_mouse_up(self, x: int, y: int):
+        if self.is_in_bounds(x, y):
+            self.mouse_up.fire(x, y)
+
+        for child in self.children:
+            child._on_mouse_up(x, y)
+
+    def draw(self, out: pygame.Surface): ...
+    def draw_all_children(self, out: pygame.Surface):
+        self.draw(out)
+
+        for child in self.children:
+            child.draw_all_children(out)
 
 
 class Image(UIElement):
@@ -115,9 +173,13 @@ class Image(UIElement):
         super().__init__(parent, anchor_point, position, size)
 
         self.image = image
-        self.render()
+        self.rerender()
 
-    def render(self):
+    def set_image(self, new_image: pygame.Surface):
+        self.image = new_image
+        self.rerender()
+
+    def rerender(self):
         rendered = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
         scaled_image = pygame.transform.scale_by(
             self.image, min(self.absolute_size.tup) / max(self.image.size)

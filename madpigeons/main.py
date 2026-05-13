@@ -1,12 +1,8 @@
 import pygame
-<<<<<<< HEAD
 import pymunk
 from typing import Callable
 from pygame import draw
 
-=======
-from game import Game
->>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 from game import PhysGame
 from ui import UIElement, Image, UIDim2, Vec2
 import objects
@@ -20,7 +16,7 @@ class InventoryItem:
         name: str,
         image: pygame.Surface,
     ) -> None:
-        self.fn = fn
+        self.create = fn
         self.name = name
         self.image = image
 
@@ -28,24 +24,30 @@ class InventoryItem:
 IS_DEBUG = False
 
 HOTBAR: list[InventoryItem] = [
+    InventoryItem(lambda scope: objects.WoodBox(scope, 1), "Wood Box", assets.WOOD_BOX),
     InventoryItem(
-        lambda scope: objects.WoodBall(scope, 30), "Wood Ball", assets.WOOD_BALL
+        lambda scope: objects.WoodBall(scope, 1), "Wood Ball", assets.WOOD_BALL
     ),
     InventoryItem(
-        lambda scope: objects.WoodPlank(scope, 30), "Wood Plank", assets.WOOD_PLANK
+        lambda scope: objects.WoodPlankThin(scope, 1), "Wood Plank", assets.WOOD_PLANK
     ),
     InventoryItem(
-        lambda scope: objects.WoodTriangle(scope, 30),
+        lambda scope: objects.WoodPlankThick(scope, 1),
+        "Wood Plank",
+        assets.WOOD_RECTANGLE,
+    ),
+    InventoryItem(
+        lambda scope: objects.WoodTriangle(scope, 1),
         "Wood Triangle",
         assets.WOOD_TRIANGLE,
     ),
     InventoryItem(
-        lambda scope: objects.WoodWedge(scope, 30),
+        lambda scope: objects.WoodWedge(scope, 1),
         "Wood Wedge",
         assets.WOOD_WEDGE,
     ),
     InventoryItem(
-        lambda scope: objects.Piggy(scope, 30),
+        lambda scope: objects.Piggy(scope, 1),
         "Pig",
         assets.PIG_SMILING,
     ),
@@ -75,34 +77,45 @@ class TheGame(Game):
     def __init__(self) -> None:
         super().__init__()
 
-<<<<<<< HEAD
         self.background_image = pygame.transform.scale(
             assets.BACKGROUND_1,
             (self.window_width, self.window_height),
         )
-=======
-        self.background_image = pygame.transform.scale(pygame.image.load("madpigeons/assets/background.jpg"), (self.window_width, self.window_height))
->>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 
         screen_container = UIElement(size=UIDim2(self.window_width, self.window_height))
+        self.screen_container = screen_container
 
-        self.test_image = Image(
-            screen_container, size=UIDim2(64, 32), image=assets.RED_BIRD
+        hotbar_container = UIElement(
+            screen_container,
+            size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.5, 0),
+            position=UIDim2(0, -5, 0.5, 1),
+            anchor_point=Vec2(0.5, 1),
         )
 
-<<<<<<< HEAD
+        hotbar_count = len(HOTBAR)
+
+        self.current_dragging_item: InventoryItem | None = None
+
+        for index, item in enumerate(HOTBAR):
+            image = Image(
+                hotbar_container,
+                Vec2(index / (hotbar_count - 1), 0),
+                UIDim2(0, 0, index / (hotbar_count - 1), 0),
+                UIDim2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE),
+                image=item.image,
+            )
+
+            def on_mouse_down(*_, item=item):
+                self.current_dragging_item = item
+
+            image.mouse_down.connect(on_mouse_down)
+
         scope = objects.EntityScope(self.space)
-
-        red = objects.RedBird(scope)
-        red.body.position = (500, 300)
-
-        for i in range(100):
-            objects.Piggy(scope, 10 + i // 2).body.position = (500, 300 - 30 * i)
 
         floor_segment = pymunk.Segment(
             self.space.static_body,
-            (-1e4, self.window_height * 0.9 + 80),
-            (1e4, self.window_height * 0.9 + 80),
+            (-1e4, self.window_height * 0.9 + 70),
+            (1e4, self.window_height * 0.9 + 70),
             90,
         )
         floor_segment.friction = 0.6
@@ -110,9 +123,19 @@ class TheGame(Game):
         self.space.add(floor_segment)
         self.scope = scope
 
-    def on_mouse_move(self):
-        self.test_image.size = UIDim2(*pygame.mouse.get_pos())
-        self.test_image.render()
+    def on_mouse_left_down(self):
+        self.screen_container._on_mouse_down(*pygame.mouse.get_pos())
+
+    def on_mouse_left_up(self):
+        mouse_position = pygame.mouse.get_pos()
+
+        self.screen_container._on_mouse_up(*mouse_position)
+
+        if self.current_dragging_item != None:
+            object = self.current_dragging_item.create(self.scope)
+            object.body.position = mouse_position
+
+            self.current_dragging_item = None
 
     def on_draw(self, out: pygame.Surface):
         out.blit(self.background_image)
@@ -123,41 +146,10 @@ class TheGame(Game):
                 entity.debug_draw(out)
 
     def on_draw_interface(self, out: pygame.Surface):
-        total_width = len(HOTBAR) * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING)
+        self.screen_container.draw_all_children(out)
 
-        self.test_image.draw(out)
-        self.test_image.debug_draw(out)
-
-        for index, item in enumerate(HOTBAR):
-            scaled_image = pygame.transform.scale_by(
-                item.image, HOTBAR_SLOT_SIZE / max(*item.image.size)
-            )
-
-            x = (
-                self.window_width / 2
-                + (index * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING))
-                - (total_width / 2)
-            ) + HOTBAR_SLOT_PADDING / 2
-            y = (
-                self.window_height
-                - HOTBAR_SLOT_SIZE
-                - 10
-                + (HOTBAR_SLOT_SIZE / 2 - scaled_image.height / 2)
-            )
-
-            out.blit(
-                scaled_image,
-                (x, y),
-            )
-            if IS_DEBUG:
-                draw.rect(
-                    out,
-                    "pink",
-                    pygame.Rect(x, y, *scaled_image.size),
-                    width=1,
-                )
-
-=======
+        if self.current_dragging_item != None:
+            draw.circle(out, "red", pygame.mouse.get_pos(), 4)
 
     def on_draw(self, out: pygame.Surface):
         out.blit(self.background_image, dest = (0, 0))
@@ -165,8 +157,6 @@ class TheGame(Game):
         for i in range(len(BOX_POSITIONS)):
             out.blit(self.box.IMAGE, dest = BOX_POSITIONS[i]) #50x49
         
-        
->>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 
 game = TheGame()
 game.start()
