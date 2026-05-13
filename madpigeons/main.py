@@ -1,8 +1,12 @@
 import pygame
+<<<<<<< HEAD
 import pymunk
 from typing import Callable
 from pygame import draw
 
+=======
+from game import Game
+>>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 from game import PhysGame
 from ui import UIElement, Image, UIDim2, Vec2
 import objects
@@ -50,7 +54,18 @@ HOTBAR_SLOT_SIZE = 70
 HOTBAR_SLOT_PADDING = 4
 
 
-class TheGame(PhysGame):
+
+from box import Box
+
+GROUND_Y = 349
+BOX_POSITIONS = [
+    (200, GROUND_Y),        
+    (350, GROUND_Y),        
+    (500, GROUND_Y - 80),  
+    (650, GROUND_Y),        
+    (800, GROUND_Y - 120)
+    ]
+class TheGame(Game):
     window_width = 1000
     window_height = 564
     gravity = 500
@@ -60,10 +75,14 @@ class TheGame(PhysGame):
     def __init__(self) -> None:
         super().__init__()
 
+<<<<<<< HEAD
         self.background_image = pygame.transform.scale(
             assets.BACKGROUND_1,
             (self.window_width, self.window_height),
         )
+=======
+        self.background_image = pygame.transform.scale(pygame.image.load("madpigeons/assets/background.jpg"), (self.window_width, self.window_height))
+>>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 
         screen_container = UIElement(size=UIDim2(self.window_width, self.window_height))
 
@@ -71,6 +90,7 @@ class TheGame(PhysGame):
             screen_container, size=UIDim2(64, 32), image=assets.RED_BIRD
         )
 
+<<<<<<< HEAD
         scope = objects.EntityScope(self.space)
 
         red = objects.RedBird(scope)
@@ -137,6 +157,16 @@ class TheGame(PhysGame):
                     width=1,
                 )
 
+=======
+
+    def on_draw(self, out: pygame.Surface):
+        out.blit(self.background_image, dest = (0, 0))
+        self.bird.draw(out)
+        for i in range(len(BOX_POSITIONS)):
+            out.blit(self.box.IMAGE, dest = BOX_POSITIONS[i]) #50x49
+        
+        
+>>>>>>> 90c4695da524de50f76775f1eefe32e8ad33548e
 
 game = TheGame()
 game.start()
