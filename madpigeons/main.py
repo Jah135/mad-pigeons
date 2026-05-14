@@ -1,7 +1,7 @@
 import pygame
 import pymunk
-from typing import Callable
-from pygame import draw
+from typing import Any, Callable
+from pygame import draw, mouse
 
 from game import PhysGame
 from ui import UIElement, Label, Frame, Image, UIDim2, Vec2
@@ -12,46 +12,54 @@ import assets
 class InventoryItem:
     def __init__(
         self,
-        fn: Callable[[objects.EntityScope], objects.RigidEntity],
         name: str,
         image: pygame.Surface,
+        create: Callable[[objects.EntityScope], objects.RigidEntity],
     ) -> None:
-        self.create = fn
         self.name = name
         self.image = image
 
+        self.create_entity = create
 
-IS_DEBUG = False
 
 HOTBAR: list[InventoryItem] = [
-    InventoryItem(lambda scope: objects.WoodBox(scope, 1), "Box", assets.WOOD_BOX),
-    InventoryItem(lambda scope: objects.WoodBall(scope, 1), "Ball", assets.WOOD_BALL),
     InventoryItem(
-        lambda scope: objects.WoodPlankThin(scope, 1), "Thin Plank", assets.WOOD_PLANK
+        "Box",
+        assets.WOOD_BOX,
+        lambda scope: objects.WoodBox(scope, 1),
     ),
     InventoryItem(
-        lambda scope: objects.WoodPlankThick(scope, 1),
+        "Ball",
+        assets.WOOD_BALL,
+        lambda scope: objects.WoodBall(scope, 1),
+    ),
+    InventoryItem(
+        "Thin Plank",
+        assets.WOOD_PLANK,
+        lambda scope: objects.WoodPlankThin(scope, 1),
+    ),
+    InventoryItem(
         "Thick Plank",
         assets.WOOD_RECTANGLE,
+        lambda scope: objects.WoodPlankThick(scope, 1),
     ),
     InventoryItem(
-        lambda scope: objects.WoodTriangle(scope, 1),
         "Triangle",
         assets.WOOD_TRIANGLE,
+        lambda scope: objects.WoodTriangle(scope, 1),
     ),
     InventoryItem(
-        lambda scope: objects.WoodWedge(scope, 1, True),
         "Wedge",
         assets.WOOD_WEDGE,
+        lambda scope: objects.WoodWedge(scope, 1, True),
     ),
     InventoryItem(
-        lambda scope: objects.Piggy(scope, 1),
         "Pig",
         assets.PIG_SMILING,
+        lambda scope: objects.Piggy(scope, 1),
     ),
 ]
 HOTBAR_SLOT_SIZE = 70
-HOTBAR_SLOT_PADDING = 4
 
 
 class TheGame(PhysGame):
@@ -64,16 +72,29 @@ class TheGame(PhysGame):
     def __init__(self) -> None:
         super().__init__()
 
-        self.background_image = pygame.transform.scale(
-            assets.BACKGROUND_1,
-            (self.window_width, self.window_height),
+        self.pause_simulation()
+
+        scope = objects.EntityScope(self.space)
+
+        floor_segment = pymunk.Segment(
+            self.space.static_body,
+            (-1e4, self.window_height * 0.9 + 70),
+            (1e4, self.window_height * 0.9 + 70),
+            90,
+        )
+        floor_segment.friction = 0.6
+
+        self.space.add(floor_segment)
+        self.scope = scope
+
+        screen_ui_container = UIElement(
+            size=UIDim2(self.window_width, self.window_height)
         )
 
-        screen_container = UIElement(size=UIDim2(self.window_width, self.window_height))
-        self.screen_container = screen_container
+        self.screen_ui_container = screen_ui_container
 
         hotbar_container = UIElement(
-            screen_container,
+            screen_ui_container,
             size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.6, 0),
             position=UIDim2(0, -5, 0.5, 1),
             anchor_point=Vec2(0.5, 1),
@@ -81,7 +102,7 @@ class TheGame(PhysGame):
 
         hotbar_count = len(HOTBAR)
 
-        self.current_dragging_item: InventoryItem | None = None
+        self.current_dragging_entity: objects.RigidEntity | None = None
 
         for index, item in enumerate(HOTBAR):
             frame = Frame(
@@ -101,59 +122,70 @@ class TheGame(PhysGame):
                 image=item.image,
             )
 
-            Label(
+            name_label = Label(
                 frame,
                 Vec2(0, 1),
                 size=UIDim2(0, 20, 1, 0),
                 text=item.name,
                 text_color=(0, 0, 0, 255),
             )
+            name_label.visible = False
 
             def on_mouse_down(*_, item=item):
-                self.current_dragging_item = item
+                new_entity = item.create_entity(scope)
+                self.current_dragging_entity = new_entity
+
+            def on_mouse_enter(*_, name_label=name_label):
+                name_label.visible = True
+
+            def on_mouse_leave(*_, name_label=name_label):
+                name_label.visible = False
 
             frame.mouse_down.connect(on_mouse_down)
+            frame.mouse_enter.connect(on_mouse_enter)
+            frame.mouse_leave.connect(on_mouse_leave)
 
-        scope = objects.EntityScope(self.space)
-
-        floor_segment = pymunk.Segment(
-            self.space.static_body,
-            (-1e4, self.window_height * 0.9 + 70),
-            (1e4, self.window_height * 0.9 + 70),
-            90,
+        self.background_image = pygame.transform.scale(
+            assets.BACKGROUND_1,
+            (self.window_width, self.window_height),
         )
-        floor_segment.friction = 0.6
 
-        self.space.add(floor_segment)
-        self.scope = scope
+    def collision_handler(
+        self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
+    ):
+        print("collision")
 
-    def on_mouse_left_down(self):
-        self.screen_container._on_mouse_down(*pygame.mouse.get_pos())
+    def on_mouse_left_down(self, pos: tuple[int, int]):
+        self.screen_ui_container._on_mouse_down(*pos)
 
-    def on_mouse_left_up(self):
-        mouse_position = pygame.mouse.get_pos()
+    def on_mouse_left_up(self, pos: tuple[int, int]):
+        self.screen_ui_container._on_mouse_up(*pos)
 
-        self.screen_container._on_mouse_up(*mouse_position)
+        if self.current_dragging_entity != None:
+            self.current_dragging_entity.body.position = pos
+            self.current_dragging_entity = None
 
-        if self.current_dragging_item != None:
-            object = self.current_dragging_item.create(self.scope)
-            object.body.position = mouse_position
+    def on_mouse_move(self, pos: tuple[int, int]):
+        self.screen_ui_container._on_mouse_move(*pos)
 
-            self.current_dragging_item = None
+        if self.current_dragging_entity != None:
+            self.current_dragging_entity.body.position = pos
 
-    def on_draw(self, out: pygame.Surface):
+    def on_key_down(self, key: str):
+        if key == "space":
+            if self.is_simulation_running:
+                self.pause_simulation()
+            else:
+                self.resume_simulation()
+
+    def on_draw_scene(self, out: pygame.Surface):
         out.blit(self.background_image)
 
         for entity in self.scope.entities:
             entity.draw(out)
-            if IS_DEBUG:
-                entity.debug_draw(out)
 
     def on_draw_interface(self, out: pygame.Surface):
-        self.screen_container.draw_all_children(out)
-
-        if self.current_dragging_item != None:
-            draw.circle(out, "red", pygame.mouse.get_pos(), 4)
+        self.screen_ui_container.draw_descendants_to_surface(out)
 
 
 game = TheGame()

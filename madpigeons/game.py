@@ -1,5 +1,9 @@
+from typing import Any
+
 import pygame
 import pymunk
+
+from pygame import mouse, key
 
 
 class Game:
@@ -23,12 +27,15 @@ class Game:
         self.running = False
 
     # mouse events
-    def on_mouse_left_down(self): ...
-    def on_mouse_left_up(self): ...
-    def on_mouse_move(self): ...
+    def on_mouse_left_down(self, pos: tuple[int, int]): ...
+    def on_mouse_left_up(self, pos: tuple[int, int]): ...
+    def on_mouse_move(self, pos: tuple[int, int]): ...
+
+    # keyboard events
+    def on_key_down(self, key: str): ...
 
     def on_event(self, event: pygame.event.Event): ...
-    def on_draw(self, out: pygame.Surface): ...
+    def on_draw_scene(self, out: pygame.Surface): ...
     def on_draw_interface(self, out: pygame.Surface): ...
     def on_update(self, dt: float): ...
 
@@ -46,16 +53,18 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    self.on_mouse_left_down()
+                    self.on_mouse_left_down(mouse.get_pos())
                 elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    self.on_mouse_left_up()
+                    self.on_mouse_left_up(mouse.get_pos())
                 elif event.type == pygame.MOUSEMOTION:
-                    self.on_mouse_move()
+                    self.on_mouse_move(mouse.get_pos())
+                elif event.type == pygame.KEYDOWN:
+                    self.on_key_down(key.name(event.key))
 
             dt = clock.tick(self.target_framerate) / 1000
 
             self.on_update(dt=dt)
-            self.on_draw(out=self.screen)
+            self.on_draw_scene(out=self.screen)
             self.on_draw_interface(out=self.screen)
             pygame.display.flip()
 
@@ -71,5 +80,20 @@ class PhysGame(Game):
         self.space = pymunk.Space()
         self.space.gravity = (0, self.gravity)
 
+        self.space.on_collision(begin=self.collision_handler)
+
+        self.is_simulation_running = True
+
+    def collision_handler(
+        self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
+    ): ...
+
+    def pause_simulation(self):
+        self.is_simulation_running = False
+
+    def resume_simulation(self):
+        self.is_simulation_running = True
+
     def on_update(self, dt: float):
-        self.space.step(dt)
+        if self.is_simulation_running:
+            self.space.step(dt)

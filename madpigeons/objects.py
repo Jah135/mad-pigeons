@@ -11,33 +11,34 @@ import assets
 
 class EntityScope:
     def __init__(self, space: pymunk.Space):
-        self.entities: list[Entity] = []
+        self.entities: list[RigidEntity] = []
         self.space = space
 
-    def add(self, entity: "Entity"):
-        self.entities.append(entity)
+        self._body_to_entity: dict[pymunk.Body, RigidEntity] = {}
 
-    def remove(self, entity: "Entity"):
+    def get_entity_from_body(self, body: pymunk.Body):
+        return self._body_to_entity[body]
+
+    def append(self, entity: "RigidEntity"):
+        self._body_to_entity[entity.body] = entity
+
+        self.entities.append(entity)
+        self.space.add(entity.body)
+
+    def remove(self, entity: "RigidEntity"):
         self.entities.remove(entity)
 
 
-class Entity:
-    def __init__(self, scope: EntityScope):
-        scope.add(self)
-
-    def draw(self, screen: pygame.Surface): ...
-    def debug_draw(self, screen: pygame.Surface): ...
-
-
-class RigidEntity(Entity):
+class RigidEntity:
     body: pymunk.Body
     image: pygame.Surface
 
     def __init__(self, scope: EntityScope):
         self.body = pymunk.Body()
 
-        scope.add(self)
-        scope.space.add(self.body)
+        scope.append(self)
+
+    def on_collision(self, arbiter: pymunk.Arbiter): ...
 
     def draw(self, screen: pygame.Surface):
         rotated = transform.rotate(self.image, -degrees(self.body.angle))
@@ -80,6 +81,9 @@ class Piggy(RigidEntity):
         shape.friction = 0.4
 
         scope.space.add(shape)
+
+    def on_collision(self, arbiter: pymunk.Arbiter):
+        print("co")
 
     def debug_draw(self, screen: pygame.Surface):
         draw.circle(screen, "blue", self.body.position, self.radius, 1)

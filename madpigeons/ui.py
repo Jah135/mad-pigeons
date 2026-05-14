@@ -1,8 +1,27 @@
 from __future__ import annotations
-from typing import Optional, Callable, Literal
+from typing import Optional, Callable
+from enum import Enum
 
 import pygame
 from pygame import draw, font
+
+
+class HorizontalAlignment(Enum):
+    Left = "left"
+    Center = "center"
+    Right = "right"
+
+
+class VerticalAlignment(Enum):
+    Top = "top"
+    Center = "center"
+    Bottom = "bottom"
+
+
+class UIState(Enum):
+    Idle = "idle"
+    Hover = "hover"
+    Press = "press"
 
 
 class Vec2:
@@ -69,10 +88,6 @@ class Signal:
             callback(*args)
 
 
-XAlignment = Literal["left"] | Literal["center"] | Literal["right"]
-YAlignment = Literal["top"] | Literal["center"] | Literal["bottom"]
-
-
 class UIElement:
     parent: Optional[UIElement]
 
@@ -96,8 +111,13 @@ class UIElement:
         self.size = size
         self.visible = True
 
+        self.state = UIState.Idle
+
+        # signals
         self.mouse_down = Signal()
         self.mouse_up = Signal()
+        self.mouse_enter = Signal()
+        self.mouse_leave = Signal()
 
         self.set_parent(parent)
 
@@ -134,7 +154,7 @@ class UIElement:
         if new_parent != None:
             new_parent.children.add(self)
 
-    def is_in_bounds(self, x: int, y: int):
+    def check_in_bounds(self, x: int, y: int):
         abs_size = self.absolute_size
         abs_pos = self.absolute_position
 
@@ -146,28 +166,51 @@ class UIElement:
         )
 
     def _on_mouse_down(self, x: int, y: int):
-        if self.is_in_bounds(x, y):
+        if self.state == UIState.Hover:
+            self.state = UIState.Press
             self.mouse_down.fire(x, y)
 
+        # propogate to children
         for child in self.children:
             child._on_mouse_down(x, y)
 
     def _on_mouse_up(self, x: int, y: int):
-        if self.is_in_bounds(x, y):
+        if self.state == UIState.Press:
+            self.state = UIState.Hover
             self.mouse_up.fire(x, y)
 
+        # propogate to children
         for child in self.children:
             child._on_mouse_up(x, y)
 
-    def _draw(self, out: pygame.Surface): ...
-    def draw_all_children(self, out: pygame.Surface):
-        if not self.visible:
-            return
+    def _on_mouse_move(self, x: int, y: int):
+        if self.check_in_bounds(x, y):
+            if self.state == UIState.Idle:
+                self.state = UIState.Hover
+                self.mouse_enter.fire(x, y)
+        else:
+            if self.state != UIState.Idle:
+                self.state = UIState.Idle
+                self.mouse_leave.fire(x, y)
 
-        self._draw(out)
-
+        # propogate to children
         for child in self.children:
-            child.draw_all_children(out)
+            child._on_mouse_move(x, y)
+
+    def draw_to_surface(self, out: pygame.Surface): ...
+    def draw_descendants_to_surface(self, out: pygame.Surface):
+        draw_next: list[UIElement] = []
+        draw_queue: list[UIElement] = [self]
+
+        while len(draw_queue) > 0:
+            for element in draw_queue:
+                if not element.visible:
+                    continue
+                element.draw_to_surface(out)
+                draw_next.extend(element.children)
+
+            draw_queue.clear()
+            draw_next, draw_queue = draw_queue, draw_next
 
 
 class Label(UIElement):
@@ -181,8 +224,8 @@ class Label(UIElement):
         text_size: int = 16,
         text_color: tuple[int, int, int, int] = (0, 0, 0, 255),
         text_font: str | None = None,
-        text_x_alignment: XAlignment = "center",
-        text_y_alignment: YAlignment = "center",
+        text_x_alignment: HorizontalAlignment = HorizontalAlignment.Center,
+        text_y_alignment: VerticalAlignment = VerticalAlignment.Center,
     ) -> None:
         super().__init__(parent, anchor_point, position, size)
 
@@ -206,21 +249,21 @@ class Label(UIElement):
         rel_x_pos = 0
         rel_y_pos = 0
 
-        if self.text_x_alignment == "center":
+        if self.text_x_alignment == HorizontalAlignment.Center:
             rel_x_pos = total_width / 2 - txt_surface.width / 2
-        elif self.text_x_alignment == "right":
+        elif self.text_x_alignment == HorizontalAlignment.Right:
             rel_x_pos = total_width - txt_surface.width
 
-        if self.text_y_alignment == "center":
+        if self.text_y_alignment == VerticalAlignment.Center:
             rel_y_pos = total_height / 2 - txt_surface.height / 2
-        elif self.text_y_alignment == "bottom":
+        elif self.text_y_alignment == VerticalAlignment.Bottom:
             rel_y_pos = total_height - txt_surface.height
 
         surface.blit(txt_surface, (rel_x_pos, rel_y_pos))
 
         self._surface = surface
 
-    def _draw(self, out: pygame.Surface):
+    def draw_to_surface(self, out: pygame.Surface):
         out.blit(self._surface, self.absolute_position.tup)
 
 
@@ -244,7 +287,7 @@ class Frame(UIElement):
 
         self._surface = surface
 
-    def _draw(self, out: pygame.Surface):
+    def draw_to_surface(self, out: pygame.Surface):
         out.blit(self._surface, self.absolute_position.tup)
 
     def set_background_color(self, new_background_color: tuple[int, int, int, int]):
@@ -276,7 +319,7 @@ class Image(UIElement):
 
         self._surface = rendered
 
-    def _draw(self, out: pygame.Surface):
+    def draw_to_surface(self, out: pygame.Surface):
         out.blit(self._surface, self.absolute_position.tup)
 
     def set_image(self, new_image: pygame.Surface):
