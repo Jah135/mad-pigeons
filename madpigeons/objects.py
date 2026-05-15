@@ -11,22 +11,25 @@ import assets
 
 class EntityScope:
     def __init__(self, space: pymunk.Space):
-        self.entities: list[RigidEntity] = []
+        self.entities: set[RigidEntity] = set()
         self.space = space
 
         self._body_to_entity: dict[pymunk.Body, RigidEntity] = {}
 
-    def get_entity_from_body(self, body: pymunk.Body):
-        return self._body_to_entity[body]
+    def get_entity_from_body(self, body: pymunk.Body) -> RigidEntity | None:
+        return self._body_to_entity.get(body)
 
-    def append(self, entity: "RigidEntity"):
+    def append(self, entity: RigidEntity):
         self._body_to_entity[entity.body] = entity
 
-        self.entities.append(entity)
+        self.entities.add(entity)
         self.space.add(entity.body)
 
-    def remove(self, entity: "RigidEntity"):
+    def remove(self, entity: RigidEntity):
+        if entity in self.entities:
+            return
         self.entities.remove(entity)
+        self.space.remove(entity.body, *entity.body.shapes)
 
 
 class RigidEntity:
@@ -34,9 +37,13 @@ class RigidEntity:
     image: pygame.Surface
 
     def __init__(self, scope: EntityScope):
+        self.scope = scope
         self.body = pymunk.Body()
 
         scope.append(self)
+
+    def remove(self):
+        self.scope.remove(self)
 
     def on_collision(self, arbiter: pymunk.Arbiter): ...
 
@@ -79,11 +86,15 @@ class Piggy(RigidEntity):
         shape = pymunk.Circle(self.body, radius)
         shape.density = 0.3
         shape.friction = 0.4
+        shape.elasticity = 0.6
 
         scope.space.add(shape)
 
     def on_collision(self, arbiter: pymunk.Arbiter):
-        print("co")
+        force = (arbiter.total_impulse / self.body.mass).length
+
+        if force > 800:
+            self.remove()
 
     def debug_draw(self, screen: pygame.Surface):
         draw.circle(screen, "blue", self.body.position, self.radius, 1)
@@ -95,6 +106,8 @@ STANDARD_BALL_RADIUS = STANDARD_BOX_SIZE / 2
 
 STANDARD_THIN_PLANK_LENGTH = 100
 STANDARD_THICK_PLANK_LENGTH = 50
+
+STANDARD_WOOD_ELASTICITY = 0.5
 
 
 class WoodBox(RigidEntity):
@@ -114,6 +127,7 @@ class WoodBox(RigidEntity):
         )
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
@@ -137,6 +151,7 @@ class WoodPlankThick(RigidEntity):
         )
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
@@ -160,6 +175,7 @@ class WoodPlankThin(RigidEntity):
         )
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
@@ -182,6 +198,7 @@ class WoodWedge(RigidEntity):
         )
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
@@ -202,6 +219,7 @@ class WoodTriangle(RigidEntity):
         )
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
@@ -217,6 +235,7 @@ class WoodBall(RigidEntity):
         shape = pymunk.Circle(self.body, radius)
         shape.density = 0.6
         shape.friction = 0.8
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 

@@ -39,12 +39,20 @@ class Game:
     def on_draw_interface(self, out: pygame.Surface): ...
     def on_update(self, dt: float): ...
 
+    def setup(self): ...
+    def setup_ui(self): ...
+
+    # def
+
     def quit(self):
         self.running = False
 
     def start(self):
         clock = pygame.time.Clock()
         self.running = True
+
+        self.setup()
+        self.setup_ui()
 
         while self.running:
             for event in pygame.event.get():
@@ -80,7 +88,7 @@ class PhysGame(Game):
         self.space = pymunk.Space()
         self.space.gravity = (0, self.gravity)
 
-        self.space.on_collision(begin=self.collision_handler)
+        self.space.on_collision(post_solve=self.collision_handler)
 
         self.is_simulation_running = True
 

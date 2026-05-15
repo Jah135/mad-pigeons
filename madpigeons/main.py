@@ -58,8 +58,19 @@ HOTBAR: list[InventoryItem] = [
         assets.PIG_SMILING,
         lambda scope: objects.Piggy(scope, 1),
     ),
+    InventoryItem(
+        "Bird",
+        assets.RED_BIRD,
+        lambda scope: objects.RedBird(scope),
+    ),
 ]
 HOTBAR_SLOT_SIZE = 70
+
+
+def point_in_body(point: tuple[float, float], body: pymunk.Body):
+    for shape in body.shapes:
+        if shape.point_query(point).distance <= 0:
+            return True
 
 
 class TheGame(PhysGame):
@@ -69,9 +80,7 @@ class TheGame(PhysGame):
     title = "Mad Pigeons™ (not angry birds)"
     icon = assets.RED_BIRD
 
-    def __init__(self) -> None:
-        super().__init__()
-
+    def setup(self):
         self.pause_simulation()
 
         scope = objects.EntityScope(self.space)
@@ -83,26 +92,33 @@ class TheGame(PhysGame):
             90,
         )
         floor_segment.friction = 0.6
+        floor_segment.elasticity = 0.4
 
         self.space.add(floor_segment)
         self.scope = scope
 
+        self.current_dragging_entity: objects.RigidEntity | None = None
+
+        self.background_image = pygame.transform.scale(
+            assets.BACKGROUND_1,
+            (self.window_width, self.window_height),
+        )
+
+    def setup_ui(self):
         screen_ui_container = UIElement(
             size=UIDim2(self.window_width, self.window_height)
         )
 
         self.screen_ui_container = screen_ui_container
 
+        # setup hotbar
+        hotbar_count = len(HOTBAR)
         hotbar_container = UIElement(
             screen_ui_container,
             size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.6, 0),
             position=UIDim2(0, -5, 0.5, 1),
             anchor_point=Vec2(0.5, 1),
         )
-
-        hotbar_count = len(HOTBAR)
-
-        self.current_dragging_entity: objects.RigidEntity | None = None
 
         for index, item in enumerate(HOTBAR):
             frame = Frame(
@@ -132,7 +148,8 @@ class TheGame(PhysGame):
             name_label.visible = False
 
             def on_mouse_down(*_, item=item):
-                new_entity = item.create_entity(scope)
+                new_entity = item.create_entity(self.scope)
+                new_entity.body.position = mouse.get_pos()
                 self.current_dragging_entity = new_entity
 
             def on_mouse_enter(*_, name_label=name_label):
@@ -145,17 +162,25 @@ class TheGame(PhysGame):
             frame.mouse_enter.connect(on_mouse_enter)
             frame.mouse_leave.connect(on_mouse_leave)
 
-        self.background_image = pygame.transform.scale(
-            assets.BACKGROUND_1,
-            (self.window_width, self.window_height),
-        )
-
     def collision_handler(
         self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
     ):
-        print("collision")
+        body_1, body_2 = arbiter.bodies
+
+        entity_1 = self.scope.get_entity_from_body(body_1)
+        if entity_1 is not None:
+            entity_1.on_collision(arbiter)
+
+        entity_2 = self.scope.get_entity_from_body(body_2)
+        if entity_2 is not None:
+            entity_2.on_collision(arbiter)
 
     def on_mouse_left_down(self, pos: tuple[int, int]):
+        for entity in self.scope.entities:
+            if point_in_body(pos, entity.body):
+                self.current_dragging_entity = entity
+                break
+
         self.screen_ui_container._on_mouse_down(*pos)
 
     def on_mouse_left_up(self, pos: tuple[int, int]):
@@ -168,15 +193,22 @@ class TheGame(PhysGame):
     def on_mouse_move(self, pos: tuple[int, int]):
         self.screen_ui_container._on_mouse_move(*pos)
 
-        if self.current_dragging_entity != None:
-            self.current_dragging_entity.body.position = pos
-
     def on_key_down(self, key: str):
         if key == "space":
             if self.is_simulation_running:
                 self.pause_simulation()
             else:
                 self.resume_simulation()
+
+    def on_update(self, dt: float):
+        super().on_update(dt)
+
+        entity = self.current_dragging_entity
+
+        if entity != None:
+            body = entity.body
+            body.position = mouse.get_pos()
+            body.velocity = (0, 0)
 
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(self.background_image)
