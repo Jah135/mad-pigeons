@@ -185,6 +185,8 @@ class TheGame(PhysGame):
             entity.draw(out)
 
     def on_draw_interface(self, out: pygame.Surface):
+        out.blit(assets.FOREMAN_PIG)
+
         self.screen_ui_container.draw_descendants_to_surface(out)
 
 
