@@ -16,16 +16,16 @@ class EntityScope:
 
         self._body_to_entity: dict[pymunk.Body, RigidEntity] = {}
 
-    def get_entity_from_body(self, body: pymunk.Body) -> RigidEntity | None:
+    def get_entity_from_body(self, body: pymunk.Body) -> "RigidEntity | None":
         return self._body_to_entity.get(body)
 
-    def append(self, entity: RigidEntity):
+    def append(self, entity: "RigidEntity"):
         self._body_to_entity[entity.body] = entity
 
         self.entities.add(entity)
         self.space.add(entity.body)
 
-    def remove(self, entity: RigidEntity):
+    def remove(self, entity: "RigidEntity"):
         if entity in self.entities:
             return
         self.entities.remove(entity)
