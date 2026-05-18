@@ -1,7 +1,8 @@
 import pygame
 import os
+import pathlib
 
-os.chdir("C:\\Users\\nbradberry425\\Documents\\GitHub\\mad-pigeons\\madpigeons")
+os.chdir(pathlib.Path(__file__).parent.resolve())
 
 # backgrounds
 BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background1.jpg")
@@ -26,7 +27,7 @@ KING_PIG_HURT_2 = PIG_SPRITESHEET.subsurface(pygame.Rect(137, 2, 129, 144))
 KING_PIG_HURT_3 = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 12, 129, 133))
 KING_PIG_HURT_4 = PIG_SPRITESHEET.subsurface(pygame.Rect(2, 2, 130, 145))
 
-#Foreman Pig
+# Foreman Pig
 FOREMAN_PIG = PIG_SPRITESHEET.subsurface(pygame.Rect(507, 152, 118, 101))
 
 
