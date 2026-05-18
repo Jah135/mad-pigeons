@@ -29,6 +29,9 @@ class Vec2:
         self.x = x
         self.y = y
 
+    def __repr__(self) -> str:
+        return f"Vec2({self.x}, {self.y})"
+
     def __add__(self, other: Vec2) -> Vec2:
         return Vec2(self.x + other.x, self.y + other.y)
 
@@ -40,6 +43,9 @@ class Vec2:
             return Vec2(self.x * other.x, self.y * other.y)
         return Vec2(self.x * other, self.y * other)
 
+    def __neg__(self):
+        return Vec2(-self.x, -self.y)
+
     def __truediv__(self, other: Vec2 | float) -> Vec2:
         if isinstance(other, Vec2):
             return Vec2(self.x / other.x, self.y / other.y)
@@ -48,6 +54,12 @@ class Vec2:
     @property
     def tup(self) -> tuple[float, float]:
         return (self.x, self.y)
+
+    def max(self, other: Vec2) -> Vec2:
+        return Vec2(max(self.x, other.x), max(self.y, other.y))
+
+    def min(self, other: Vec2) -> Vec2:
+        return Vec2(min(self.x, other.x), min(self.y, other.y))
 
 
 class UIDim:
@@ -76,7 +88,7 @@ class UIDim2:
         return Vec2(self.x.scale, self.y.scale)
 
 
-class Signal:
+class EventSignal:
     def __init__(self) -> None:
         self.callbacks = []
 
@@ -96,6 +108,8 @@ class UIElement:
     size: UIDim2
     visible: bool
 
+    buffer_texture: pygame.Surface
+
     def __init__(
         self,
         parent: Optional[UIElement] = None,
@@ -114,12 +128,13 @@ class UIElement:
         self.state = UIState.Idle
 
         # signals
-        self.mouse_down = Signal()
-        self.mouse_up = Signal()
-        self.mouse_enter = Signal()
-        self.mouse_leave = Signal()
+        self.mouse_down = EventSignal()
+        self.mouse_up = EventSignal()
+        self.mouse_enter = EventSignal()
+        self.mouse_leave = EventSignal()
 
         self.set_parent(parent)
+        self.rerender_self()
 
     @property
     def absolute_size(self) -> Vec2:
@@ -138,6 +153,23 @@ class UIElement:
             + self.position.offsets
             + self.parent.absolute_size * self.position.scales
         ) - (self.absolute_size * self.anchor_point)
+
+    @property
+    def absolute_bounds(self) -> pygame.Rect:
+        top_left = self.absolute_position
+        size = self.absolute_size
+
+        for child in self.children:
+            child_bounds = child.absolute_bounds
+            child_topleft = Vec2(*child_bounds.topleft)
+            child_dimensions = Vec2(*child_bounds.size)
+
+            top_left = top_left.min(child_topleft)
+            size = size.max((child_topleft - self.absolute_position) + child_dimensions)
+
+        return pygame.Rect(
+            top_left.tup, (size + (self.absolute_position - top_left)).tup
+        )
 
     @property
     def rect(self) -> pygame.Rect:
@@ -197,20 +229,45 @@ class UIElement:
         for child in self.children:
             child._on_mouse_move(x, y)
 
-    def draw_to_surface(self, out: pygame.Surface): ...
-    def draw_descendants_to_surface(self, out: pygame.Surface):
-        draw_next: list[UIElement] = []
-        draw_queue: list[UIElement] = [self]
+    def rerender_self(self):
+        texture = pygame.Surface(self.absolute_bounds.size, pygame.SRCALPHA)
 
-        while len(draw_queue) > 0:
-            for element in draw_queue:
-                if not element.visible:
-                    continue
-                element.draw_to_surface(out)
-                draw_next.extend(element.children)
+        self.buffer_texture = texture
 
-            draw_queue.clear()
-            draw_next, draw_queue = draw_queue, draw_next
+    def rerender_ancestors(self):
+        self.rerender_self()
+
+        # draw.rect(
+        #     self.buffer_texture,
+        #     "purple",
+        #     self.absolute_bounds.move((-self.absolute_position).tup),
+        #     4,
+        # )
+
+        for child in self.children:
+            # draw.rect(self.buffer_texture, "green", child.absolute_bounds.move((-)), 2)
+            self.buffer_texture.blit(
+                child.buffer_texture,
+                (child.absolute_position - self.absolute_position).tup,
+            )
+
+        if self.parent != None:
+            self.parent.rerender_ancestors()
+
+    def draw_to_surface(self, out: pygame.Surface):
+        out.blit(self.buffer_texture)
+        # draw_next: list[UIElement] = []
+        # draw_queue: list[UIElement] = [self]
+
+        # while len(draw_queue) > 0:
+        #     for element in draw_queue:
+        #         if not element.visible:
+        #             continue
+        #         element.draw_to_surface(out)
+        #         draw_next.extend(element.children)
+
+        #     draw_queue.clear()
+        #     draw_next, draw_queue = draw_queue, draw_next
 
 
 class Label(UIElement):
@@ -227,8 +284,6 @@ class Label(UIElement):
         text_x_alignment: HorizontalAlignment = HorizontalAlignment.Center,
         text_y_alignment: VerticalAlignment = VerticalAlignment.Center,
     ) -> None:
-        super().__init__(parent, anchor_point, position, size)
-
         self.text = text
         self.text_size = text_size
         self.text_color = text_color
@@ -237,12 +292,12 @@ class Label(UIElement):
 
         self._font = font.Font(text_font, self.text_size)
 
-        self._rerender()
+        super().__init__(parent, anchor_point, position, size)
 
-    def _rerender(self):
+    def rerender_self(self):
         total_width, total_height = self.absolute_size.tup
 
-        surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
+        texture = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
 
         txt_surface = self._font.render(self.text, True, self.text_color)
 
@@ -259,12 +314,9 @@ class Label(UIElement):
         elif self.text_y_alignment == VerticalAlignment.Bottom:
             rel_y_pos = total_height - txt_surface.height
 
-        surface.blit(txt_surface, (rel_x_pos, rel_y_pos))
+        texture.blit(txt_surface, (rel_x_pos, rel_y_pos))
 
-        self._surface = surface
-
-    def draw_to_surface(self, out: pygame.Surface):
-        out.blit(self._surface, self.absolute_position.tup)
+        self.buffer_texture = texture
 
 
 class Frame(UIElement):
@@ -275,24 +327,19 @@ class Frame(UIElement):
         position: UIDim2 = UIDim2(),
         size: UIDim2 = UIDim2(),
     ) -> None:
-        super().__init__(parent, anchor_point, position, size)
-
         self.background_color: tuple[int, int, int, int] = (255, 255, 255, 255)
 
-        self._rerender()
+        super().__init__(parent, anchor_point, position, size)
 
-    def _rerender(self):
-        surface = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
-        surface.fill(self.background_color)
+    def rerender_self(self):
+        texture = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
+        texture.fill(self.background_color)
 
-        self._surface = surface
-
-    def draw_to_surface(self, out: pygame.Surface):
-        out.blit(self._surface, self.absolute_position.tup)
+        self.buffer_texture = texture
 
     def set_background_color(self, new_background_color: tuple[int, int, int, int]):
         self.background_color = new_background_color
-        self._rerender()
+        self.rerender_ancestors()
 
 
 class Image(UIElement):
@@ -304,24 +351,21 @@ class Image(UIElement):
         size: UIDim2 = UIDim2(),
         image: pygame.Surface = pygame.Surface((1, 1)),
     ) -> None:
+        self.image = image
+
         super().__init__(parent, anchor_point, position, size)
 
-        self.set_image(image)
-
-    def _rerender(self):
-        rendered = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
+    def rerender_self(self):
+        texture = pygame.Surface(self.absolute_size.tup, pygame.SRCALPHA)
         scaled_image = pygame.transform.scale_by(
             self.image, min(self.absolute_size.tup) / max(self.image.size)
         )
-        rendered.blit(
+        texture.blit(
             scaled_image, ((self.absolute_size / 2) - Vec2(*scaled_image.size) / 2).tup
         )
 
-        self._surface = rendered
-
-    def draw_to_surface(self, out: pygame.Surface):
-        out.blit(self._surface, self.absolute_position.tup)
+        self.buffer_texture = texture
 
     def set_image(self, new_image: pygame.Surface):
         self.image = new_image
-        self._rerender()
+        self.rerender_ancestors()

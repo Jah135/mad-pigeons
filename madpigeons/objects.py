@@ -86,7 +86,7 @@ class Piggy(RigidEntity):
         shape = pymunk.Circle(self.body, radius)
         shape.density = 0.3
         shape.friction = 0.4
-        shape.elasticity = 0.6
+        shape.elasticity = STANDARD_STONE_DENSITY
 
         scope.space.add(shape)
 
@@ -100,14 +100,20 @@ class Piggy(RigidEntity):
         draw.circle(screen, "blue", self.body.position, self.radius, 1)
 
 
-## Wood presets
+## Standard constants
 STANDARD_BOX_SIZE = 50
 STANDARD_BALL_RADIUS = STANDARD_BOX_SIZE / 2
 
 STANDARD_THIN_PLANK_LENGTH = 100
 STANDARD_THICK_PLANK_LENGTH = 50
 
+STANDARD_GLASS_ELASTICITY = 0.1
+
+
+## Wood presets
 STANDARD_WOOD_ELASTICITY = 0.5
+STANDARD_WOOD_FRICTION = 0.8
+STANDARD_WOOD_DENSITY = 0.4
 
 
 class WoodBox(RigidEntity):
@@ -125,8 +131,8 @@ class WoodBox(RigidEntity):
                 (size // 2, size // 2),
             ),
         )
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
@@ -149,8 +155,8 @@ class WoodPlankThick(RigidEntity):
                 (length // 2, length // 2 // 2),
             ),
         )
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
@@ -173,8 +179,8 @@ class WoodPlankThin(RigidEntity):
                 (length // 2, length // 2 // 8),
             ),
         )
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
@@ -196,8 +202,8 @@ class WoodWedge(RigidEntity):
                 ((-1 if mirrored else 1) * size // 2, size // 2),
             ),
         )
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
@@ -217,8 +223,8 @@ class WoodTriangle(RigidEntity):
             self.body,
             ((-size // 2, size // 2), (size // 2, size // 2), (0, -size // 2)),
         )
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
@@ -233,10 +239,65 @@ class WoodBall(RigidEntity):
         radius = STANDARD_BALL_RADIUS * scale
 
         shape = pymunk.Circle(self.body, radius)
-        shape.density = 0.6
-        shape.friction = 0.8
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
         shape.elasticity = STANDARD_WOOD_ELASTICITY
 
         scope.space.add(shape)
 
         self.image = transform.scale(assets.WOOD_BALL, (radius * 2, radius * 2))
+
+
+## Stone presets
+STANDARD_STONE_ELASTICITY = 0.2
+STANDARD_STONE_FRICTION = 0.6
+STANDARD_STONE_DENSITY = 0.8
+
+
+class StoneBox(RigidEntity):
+    def __init__(self, scope: EntityScope, scale: float):
+        super().__init__(scope)
+
+        size = STANDARD_BOX_SIZE * scale
+
+        shape = pymunk.Poly(
+            self.body,
+            (
+                (-size // 2, -size // 2),
+                (size // 2, -size // 2),
+                (-size // 2, size // 2),
+                (size // 2, size // 2),
+            ),
+        )
+        shape.density = STANDARD_STONE_DENSITY
+        shape.friction = STANDARD_STONE_FRICTION
+        shape.elasticity = STANDARD_STONE_ELASTICITY
+
+        scope.space.add(shape)
+
+        self.image = transform.scale(assets.STONE_BOX, (size, size))
+
+
+class StoneWedge(RigidEntity):
+    def __init__(self, scope: EntityScope, scale: float, mirrored: bool = False):
+        super().__init__(scope)
+
+        size = STANDARD_BOX_SIZE * scale
+
+        shape = pymunk.Poly(
+            self.body,
+            (
+                ((-1 if mirrored else 1) * -size // 2, -size // 2),
+                ((-1 if mirrored else 1) * -size // 2, size // 2),
+                ((-1 if mirrored else 1) * size // 2, size // 2),
+            ),
+        )
+        shape.density = STANDARD_STONE_DENSITY
+        shape.friction = STANDARD_STONE_FRICTION
+        shape.elasticity = STANDARD_STONE_ELASTICITY
+
+        scope.space.add(shape)
+
+        self.image = transform.flip(
+            transform.scale(assets.STONE_WEDGE, (size, size)), mirrored, False
+        )

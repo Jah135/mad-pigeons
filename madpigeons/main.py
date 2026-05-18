@@ -51,7 +51,7 @@ HOTBAR: list[InventoryItem] = [
     InventoryItem(
         "Wedge",
         assets.WOOD_WEDGE,
-        lambda scope: objects.WoodWedge(scope, 1, True),
+        lambda scope: objects.WoodWedge(scope, 1),
     ),
     InventoryItem(
         "Pig",
@@ -59,9 +59,9 @@ HOTBAR: list[InventoryItem] = [
         lambda scope: objects.Piggy(scope, 1),
     ),
     InventoryItem(
-        "Bird",
-        assets.RED_BIRD,
-        lambda scope: objects.RedBird(scope),
+        "Stone Box",
+        assets.STONE_WEDGE,
+        lambda scope: objects.StoneWedge(scope, 1),
     ),
 ]
 HOTBAR_SLOT_SIZE = 70
@@ -108,7 +108,6 @@ class TheGame(PhysGame):
         screen_ui_container = UIElement(
             size=UIDim2(self.window_width, self.window_height)
         )
-
         self.screen_ui_container = screen_ui_container
 
         # setup hotbar
@@ -128,7 +127,7 @@ class TheGame(PhysGame):
                 UIDim2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE),
             )
             frame.background_color = (0, 0, 0, 80)
-            frame._rerender()
+            frame.rerender_ancestors()
 
             Image(
                 frame,
@@ -162,6 +161,41 @@ class TheGame(PhysGame):
             frame.mouse_enter.connect(on_mouse_enter)
             frame.mouse_leave.connect(on_mouse_leave)
 
+            name_label.rerender_ancestors()
+
+        # Frame(
+        #     screen_ui_container, position=UIDim2(-50, -50, 1, 0), size=UIDim2(100, 100)
+        # )
+
+        self.screen_ui_container.rerender_ancestors()
+
+    def on_update(self, dt: float):
+        super().on_update(dt)
+
+        entity = self.current_dragging_entity
+
+        if entity != None:
+            body = entity.body
+            body.position = mouse.get_pos()
+            body.velocity = (0, 0)
+
+            # apparently this fixes the problem where dragging while paused wouldnt actually update the position of the shape
+            # yay
+            self.space.reindex_shapes_for_body(body)
+
+    def on_draw_scene(self, out: pygame.Surface):
+        out.blit(self.background_image)
+
+        for entity in self.scope.entities:
+            entity.draw(out)
+
+    def on_draw_interface(self, out: pygame.Surface):
+        # NOAH TEST ASSETS HERE
+        # out.blit(assets.FOREMAN_PIG)
+
+        self.screen_ui_container.draw_to_surface(out)
+
+    # event handlers
     def collision_handler(
         self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
     ):
@@ -199,27 +233,6 @@ class TheGame(PhysGame):
                 self.pause_simulation()
             else:
                 self.resume_simulation()
-
-    def on_update(self, dt: float):
-        super().on_update(dt)
-
-        entity = self.current_dragging_entity
-
-        if entity != None:
-            body = entity.body
-            body.position = mouse.get_pos()
-            body.velocity = (0, 0)
-
-    def on_draw_scene(self, out: pygame.Surface):
-        out.blit(self.background_image)
-
-        for entity in self.scope.entities:
-            entity.draw(out)
-
-    def on_draw_interface(self, out: pygame.Surface):
-        out.blit(assets.FOREMAN_PIG)
-
-        self.screen_ui_container.draw_descendants_to_surface(out)
 
 
 game = TheGame()
