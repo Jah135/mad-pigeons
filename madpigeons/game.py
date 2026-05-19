@@ -13,6 +13,12 @@ class Game:
     title: str = "Game"
     icon: pygame.Surface | None = None
 
+    running: bool = False
+    screen: pygame.Surface
+
+    _last_dt: float = 0
+    _last_mouse_pos: tuple[int, int] = (0, 0)
+
     def __init__(self) -> None:
         pygame.init()
 
@@ -22,9 +28,6 @@ class Game:
             pygame.display.set_icon(self.icon)
 
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
-
-        self.last_dt = 0
-        self.running = False
 
     # mouse events
     def on_mouse_left_down(self, pos: tuple[int, int]): ...
@@ -55,17 +58,20 @@ class Game:
         self.setup_ui()
 
         while self.running:
+            mouse_pos = mouse.get_pos()
+
             for event in pygame.event.get():
+
                 self.on_event(event=event)
 
                 if event.type == pygame.QUIT:
                     self.quit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    self.on_mouse_left_down(mouse.get_pos())
+                    self.on_mouse_left_down(mouse_pos)
                 elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                    self.on_mouse_left_up(mouse.get_pos())
+                    self.on_mouse_left_up(mouse_pos)
                 elif event.type == pygame.MOUSEMOTION:
-                    self.on_mouse_move(mouse.get_pos())
+                    self.on_mouse_move(mouse_pos)
                 elif event.type == pygame.KEYDOWN:
                     self.on_key_down(key.name(event.key))
 
@@ -76,7 +82,8 @@ class Game:
             self.on_draw_interface(out=self.screen)
             pygame.display.flip()
 
-            self.last_dt = dt
+            self._last_dt = dt
+            self._last_mouse_pos = mouse_pos
 
 
 class PhysGame(Game):

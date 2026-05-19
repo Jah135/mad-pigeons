@@ -4,7 +4,7 @@ from typing import Any, Callable
 from pygame import draw, mouse
 
 from game import PhysGame
-from ui import UIElement, Label, Frame, Image, UIDim2, Vec2
+from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2
 import objects
 import assets
 
@@ -38,31 +38,31 @@ HOTBAR: list[InventoryItem] = [
         assets.WOOD_PLANK,
         lambda scope: objects.WoodPlankThin(scope, 1),
     ),
-    InventoryItem(
-        "Thick Plank",
-        assets.WOOD_RECTANGLE,
-        lambda scope: objects.WoodPlankThick(scope, 1),
-    ),
-    InventoryItem(
-        "Triangle",
-        assets.WOOD_TRIANGLE,
-        lambda scope: objects.WoodTriangle(scope, 1),
-    ),
-    InventoryItem(
-        "Wedge",
-        assets.WOOD_WEDGE,
-        lambda scope: objects.WoodWedge(scope, 1),
-    ),
-    InventoryItem(
-        "Pig",
-        assets.PIG_SMILING,
-        lambda scope: objects.Piggy(scope, 1),
-    ),
-    InventoryItem(
-        "Stone Box",
-        assets.STONE_WEDGE,
-        lambda scope: objects.StoneWedge(scope, 1),
-    ),
+    # InventoryItem(
+    #     "Thick Plank",
+    #     assets.WOOD_RECTANGLE,
+    #     lambda scope: objects.WoodPlankThick(scope, 1),
+    # ),
+    # InventoryItem(
+    #     "Triangle",
+    #     assets.WOOD_TRIANGLE,
+    #     lambda scope: objects.WoodTriangle(scope, 1),
+    # ),
+    # InventoryItem(
+    #     "Wedge",
+    #     assets.WOOD_WEDGE,
+    #     lambda scope: objects.WoodWedge(scope, 1),
+    # ),
+    # InventoryItem(
+    #     "Pig",
+    #     assets.PIG_SMILING,
+    #     lambda scope: objects.Piggy(scope, 1),
+    # ),
+    # InventoryItem(
+    #     "Stone Box",
+    #     assets.STONE_WEDGE,
+    #     lambda scope: objects.StoneWedge(scope, 1),
+    # ),
 ]
 HOTBAR_SLOT_SIZE = 70
 
@@ -105,17 +105,17 @@ class TheGame(PhysGame):
         )
 
     def setup_ui(self):
-        screen_ui_container = UIElement(
-            size=UIDim2(self.window_width, self.window_height)
+        screen_ui_container = GuiObject(
+            size=UDim2(x_offset=self.window_width, y_offset=self.window_height)
         )
         self.screen_ui_container = screen_ui_container
 
         # setup hotbar
         hotbar_count = len(HOTBAR)
-        hotbar_container = UIElement(
+        hotbar_container = GuiObject(
             screen_ui_container,
-            size=UIDim2(0, HOTBAR_SLOT_SIZE, 0.6, 0),
-            position=UIDim2(0, -5, 0.5, 1),
+            size=UDim2(0, 0.6, HOTBAR_SLOT_SIZE, 0),
+            position=UDim2(0, 0.5, -5, 1),
             anchor_point=Vec2(0.5, 1),
         )
 
@@ -123,24 +123,24 @@ class TheGame(PhysGame):
             frame = Frame(
                 hotbar_container,
                 Vec2(index / (hotbar_count - 1), 0),
-                UIDim2(0, 0, index / (hotbar_count - 1), 0),
-                UIDim2(HOTBAR_SLOT_SIZE, HOTBAR_SLOT_SIZE),
+                UDim2(x_scale=index / (hotbar_count - 1)),
+                UDim2(x_offset=HOTBAR_SLOT_SIZE, y_offset=HOTBAR_SLOT_SIZE),
             )
-            frame.background_color = (0, 0, 0, 80)
-            frame.rerender_ancestors()
+            frame.color = (0, 0, 0, 80)
+            frame.invalidate()
 
-            Image(
+            ImageLabel(
                 frame,
                 Vec2(0.5, 0.5),
-                UIDim2(0, 0, 0.5, 0.5),
-                UIDim2(0, 0, 0.9, 0.9),
+                UDim2(x_scale=0.5, y_scale=0.5),
+                UDim2(x_scale=0.9, y_scale=0.9),
                 image=item.image,
             )
 
-            name_label = Label(
+            name_label = TextLabel(
                 frame,
                 Vec2(0, 1),
-                size=UIDim2(0, 20, 1, 0),
+                size=UDim2(0, 1, 20, 0),
                 text=item.name,
                 text_color=(0, 0, 0, 255),
             )
@@ -161,13 +161,7 @@ class TheGame(PhysGame):
             frame.mouse_enter.connect(on_mouse_enter)
             frame.mouse_leave.connect(on_mouse_leave)
 
-            name_label.rerender_ancestors()
-
-        # Frame(
-        #     screen_ui_container, position=UIDim2(-50, -50, 1, 0), size=UIDim2(100, 100)
-        # )
-
-        self.screen_ui_container.rerender_ancestors()
+        self.screen_ui_container.invalidate()
 
     def on_update(self, dt: float):
         super().on_update(dt)
@@ -193,7 +187,8 @@ class TheGame(PhysGame):
         # NOAH TEST ASSETS HERE
         # out.blit(assets.FOREMAN_PIG)
 
-        self.screen_ui_container.draw_to_surface(out)
+        self.screen_ui_container.debug_draw_descendants(out)
+        self.screen_ui_container.draw_to(out)
 
     # event handlers
     def collision_handler(
@@ -215,17 +210,24 @@ class TheGame(PhysGame):
                 self.current_dragging_entity = entity
                 break
 
-        self.screen_ui_container._on_mouse_down(*pos)
+        self.screen_ui_container._propogate_on_mouse_down(*pos)
 
     def on_mouse_left_up(self, pos: tuple[int, int]):
-        self.screen_ui_container._on_mouse_up(*pos)
+        self.screen_ui_container._propogate_on_mouse_up(*pos)
 
         if self.current_dragging_entity != None:
+            delta_x = pos[0] - self._last_mouse_pos[0]
+            delta_y = pos[1] - self._last_mouse_pos[1]
+
             self.current_dragging_entity.body.position = pos
+            self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
             self.current_dragging_entity = None
 
     def on_mouse_move(self, pos: tuple[int, int]):
-        self.screen_ui_container._on_mouse_move(*pos)
+        # self.testframe.position = UDim2(pos[0], 0, pos[1], 0)
+        # self.testframe.invalidate()
+
+        self.screen_ui_container._propogate_on_mouse_move(*pos)
 
     def on_key_down(self, key: str):
         if key == "space":
