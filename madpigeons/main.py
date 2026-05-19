@@ -185,7 +185,7 @@ class TheGame(PhysGame):
 
     def on_draw_interface(self, out: pygame.Surface):
         # NOAH TEST ASSETS HERE
-        # out.blit(assets.FOREMAN_PIG)
+        out.blit(assets.LARGE_STONE_SQUARE, (100, 100))
 
         self.screen_ui_container.debug_draw_descendants(out)
         self.screen_ui_container.draw_to(out)
