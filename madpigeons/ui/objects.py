@@ -17,7 +17,7 @@ class GuiObject:
     size: UDim2
     visible: bool
 
-    is_stale: bool = True
+    is_stale: bool
     texture: Surface
 
     def __init__(
@@ -36,6 +36,7 @@ class GuiObject:
         self.visible = True
 
         self.state = UIState.Idle
+        self.is_stale = True
 
         # signals
         self.mouse_down = EventSignal()
@@ -104,7 +105,6 @@ class GuiObject:
         """Guaranteed to be the most up to date texture for rendering."""
 
         if self.is_stale:
-            self.is_stale = False
             self._reconcile()
 
         return self.texture
@@ -116,7 +116,7 @@ class GuiObject:
     def debug_draw_descendants(self, out: Surface):
         draw.rect(out, "blue", self.bounds, 2)
         draw.rect(out, "yellow", self.content_bounds, 2)
-        # draw.circle(out, "blue", self.absolute_position.tup, 4)
+        draw.circle(out, "blue", self.absolute_position.tup, 4)
 
         for child in self.children:
             child.debug_draw_descendants(out)
@@ -200,25 +200,27 @@ class GuiObject:
     def _reconcile(self):
         full_bounds = self.content_bounds
 
-        full_texture = Surface(full_bounds.size, SRCALPHA)
+        contents_texture = Surface(full_bounds.size, SRCALPHA)
         render_texture = Surface(self.absolute_size.tup, SRCALPHA)
 
         self.render(render_texture)
 
-        # full_texture.blit(
-        #     render_texture, (-Vec2(*full_bounds.topleft) + self.absolute_position).tup
-        # )
+        contents_texture.blit(
+            render_texture, (self.absolute_position - full_bounds.topleft).tup
+        )
 
         for child in self.children:
-            draw.circle(full_texture, "red", child.content_bounds.topleft, 4)
-            # full_texture.blit(
-            #     child.modern_texture,
-            #     child.bounds.move(
-            #         (-Vec2(*full_bounds.topleft) - self.absolute_position).tup
-            #     ),
-            # )
+            if not child.visible:
+                child.is_stale = False
+                continue
 
-        self.texture = full_texture
+            contents_texture.blit(
+                child.modern_texture,
+                (Vec2(*child.content_bounds.topleft) - full_bounds.topleft).tup,
+            )
+
+        self.texture = contents_texture
+        self.is_stale = False
 
     def render(self, render_texture: Surface):
         """

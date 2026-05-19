@@ -38,31 +38,31 @@ HOTBAR: list[InventoryItem] = [
         assets.WOOD_PLANK,
         lambda scope: objects.WoodPlankThin(scope, 1),
     ),
-    # InventoryItem(
-    #     "Thick Plank",
-    #     assets.WOOD_RECTANGLE,
-    #     lambda scope: objects.WoodPlankThick(scope, 1),
-    # ),
-    # InventoryItem(
-    #     "Triangle",
-    #     assets.WOOD_TRIANGLE,
-    #     lambda scope: objects.WoodTriangle(scope, 1),
-    # ),
-    # InventoryItem(
-    #     "Wedge",
-    #     assets.WOOD_WEDGE,
-    #     lambda scope: objects.WoodWedge(scope, 1),
-    # ),
-    # InventoryItem(
-    #     "Pig",
-    #     assets.PIG_SMILING,
-    #     lambda scope: objects.Piggy(scope, 1),
-    # ),
-    # InventoryItem(
-    #     "Stone Box",
-    #     assets.STONE_WEDGE,
-    #     lambda scope: objects.StoneWedge(scope, 1),
-    # ),
+    InventoryItem(
+        "Thick Plank",
+        assets.WOOD_RECTANGLE,
+        lambda scope: objects.WoodPlankThick(scope, 1),
+    ),
+    InventoryItem(
+        "Triangle",
+        assets.WOOD_TRIANGLE,
+        lambda scope: objects.WoodTriangle(scope, 1),
+    ),
+    InventoryItem(
+        "Wedge",
+        assets.WOOD_WEDGE,
+        lambda scope: objects.WoodWedge(scope, 1),
+    ),
+    InventoryItem(
+        "Pig",
+        assets.PIG_SMILING,
+        lambda scope: objects.Piggy(scope, 1),
+    ),
+    InventoryItem(
+        "Stone Box",
+        assets.STONE_WEDGE,
+        lambda scope: objects.StoneWedge(scope, 1),
+    ),
 ]
 HOTBAR_SLOT_SIZE = 70
 
@@ -153,9 +153,11 @@ class TheGame(PhysGame):
 
             def on_mouse_enter(*_, name_label=name_label):
                 name_label.visible = True
+                name_label.invalidate()
 
             def on_mouse_leave(*_, name_label=name_label):
                 name_label.visible = False
+                name_label.invalidate()
 
             frame.mouse_down.connect(on_mouse_down)
             frame.mouse_enter.connect(on_mouse_enter)
@@ -187,7 +189,7 @@ class TheGame(PhysGame):
         # NOAH TEST ASSETS HERE
         # out.blit(assets.FOREMAN_PIG)
 
-        self.screen_ui_container.debug_draw_descendants(out)
+        # self.screen_ui_container.debug_draw_descendants(out)
         self.screen_ui_container.draw_to(out)
 
     # event handlers
