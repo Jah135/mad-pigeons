@@ -26,7 +26,7 @@ class EntityScope:
         self.space.add(entity.body)
 
     def remove(self, entity: "RigidEntity"):
-        if entity in self.entities:
+        if entity not in self.entities:
             return
         self.entities.remove(entity)
         self.space.remove(entity.body, *entity.body.shapes)
@@ -77,7 +77,7 @@ class Piggy(RigidEntity):
         radius = scale * STANDARD_PIG_RADIUS
 
         self.image = transform.scale(
-            assets.PIG_SMILING,
+            assets.BIG_PIG_HURT_1,
             (radius * 2, radius * 2),
         )
 
@@ -301,3 +301,45 @@ class StoneWedge(RigidEntity):
         self.image = transform.flip(
             transform.scale(assets.STONE_WEDGE, (size, size)), mirrored, False
         )
+
+
+class TNT(RigidEntity):
+    def __init__(self, scope: EntityScope, scale: float):
+        super().__init__(scope)
+
+        size = STANDARD_BOX_SIZE * scale
+
+        shape = pymunk.Poly(
+            self.body,
+            (
+                (-size // 2, -size // 2),
+                (size // 2, -size // 2),
+                (-size // 2, size // 2),
+                (size // 2, size // 2),
+            ),
+        )
+        shape.density = STANDARD_WOOD_DENSITY
+        shape.friction = STANDARD_WOOD_FRICTION
+        shape.elasticity = STANDARD_WOOD_ELASTICITY
+
+        scope.space.add(shape)
+
+        self.image = transform.scale(assets.TNT, (size, size))
+
+    def on_collision(self, arbiter: pymunk.Arbiter):
+        force = arbiter.total_impulse.length / self.body.mass
+
+        print(force)
+
+        if force > 500:
+            space = self.scope.space
+            for info in space.point_query(
+                self.body.position, 100, pymunk.ShapeFilter()
+            ):
+                body = info.shape.body
+
+                if body == None or body == self.body:
+                    continue
+
+                body.apply_impulse_at_world_point(info.gradient * -500000, info.point)
+            self.remove()

@@ -95,11 +95,11 @@ class PhysGame(Game):
         self.space = pymunk.Space()
         self.space.gravity = (0, self.gravity)
 
-        self.space.on_collision(post_solve=self.collision_handler)
+        self.space.on_collision(post_solve=self.on_collision_post_solve)
 
         self.is_simulation_running = True
 
-    def collision_handler(
+    def on_collision_post_solve(
         self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
     ): ...
 

@@ -55,13 +55,13 @@ HOTBAR: list[InventoryItem] = [
     ),
     InventoryItem(
         "Pig",
-        assets.PIG_SMILING,
+        assets.BIG_PIG,
         lambda scope: objects.Piggy(scope, 1),
     ),
     InventoryItem(
-        "Stone Box",
-        assets.STONE_WEDGE,
-        lambda scope: objects.StoneWedge(scope, 1),
+        "TNT",
+        assets.TNT,
+        lambda scope: objects.TNT(scope, 1),
     ),
 ]
 HOTBAR_SLOT_SIZE = 70
@@ -187,22 +187,24 @@ class TheGame(PhysGame):
 
     def on_draw_interface(self, out: pygame.Surface):
         # NOAH TEST ASSETS HERE
-        out.blit(assets.LARGE_STONE_SQUARE, (100, 100))
+        # out.blit(assets.LARGE_STONE_SQUARE, (100, 100))
 
         # self.screen_ui_container.debug_draw_descendants(out)
         self.screen_ui_container.draw_to(out)
 
     # event handlers
-    def collision_handler(
+    def on_collision_post_solve(
         self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
     ):
         body_1, body_2 = arbiter.bodies
 
         entity_1 = self.scope.get_entity_from_body(body_1)
+
         if entity_1 is not None:
             entity_1.on_collision(arbiter)
 
         entity_2 = self.scope.get_entity_from_body(body_2)
+
         if entity_2 is not None:
             entity_2.on_collision(arbiter)
 
