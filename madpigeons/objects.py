@@ -95,7 +95,7 @@ class HealthyEntity(PhysicsEntity):
         arbiter.total_impulse
 
 
-## Bird presets
+# Bird presets
 class RedBird(PhysicsEntity):
     image = assets.RED_BIRD
 
@@ -109,7 +109,7 @@ class RedBird(PhysicsEntity):
         world.space.add(shape)
 
 
-## Pig presets
+# Pig presets
 STANDARD_PIG_RADIUS = 20
 
 
@@ -143,7 +143,7 @@ class Piggy(PhysicsEntity):
         draw.circle(screen, "blue", self.body.position, self.radius, 1)
 
 
-## Standard constants
+# Standard constants
 STANDARD_BOX_SIZE = 50
 STANDARD_BALL_RADIUS = STANDARD_BOX_SIZE / 2
 
@@ -153,7 +153,7 @@ STANDARD_THICK_PLANK_LENGTH = 50
 STANDARD_GLASS_ELASTICITY = 0.1
 
 
-## Wood presets
+# Wood presets
 STANDARD_WOOD_ELASTICITY = 0.5
 STANDARD_WOOD_FRICTION = 0.8
 STANDARD_WOOD_DENSITY = 0.4
@@ -204,7 +204,8 @@ class WoodPlankThick(PhysicsEntity):
 
         world.space.add(shape)
 
-        self.image = transform.scale(assets.WOOD_RECTANGLE, (length, length // 2))
+        self.image = transform.scale(
+            assets.WOOD_RECTANGLE, (length, length // 2))
 
 
 class WoodPlankThin(PhysicsEntity):
@@ -286,10 +287,11 @@ class WoodBall(PhysicsEntity):
 
         world.space.add(shape)
 
-        self.image = transform.scale(assets.WOOD_BALL, (radius * 2, radius * 2))
+        self.image = transform.scale(
+            assets.WOOD_BALL, (radius * 2, radius * 2))
 
 
-## Stone presets
+# Stone presets
 STANDARD_STONE_ELASTICITY = 0.2
 STANDARD_STONE_FRICTION = 0.6
 STANDARD_STONE_DENSITY = 0.8
