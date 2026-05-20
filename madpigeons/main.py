@@ -14,7 +14,7 @@ class InventoryItem:
         self,
         name: str,
         image: pygame.Surface,
-        create: Callable[[objects.EntityScope], objects.RigidEntity],
+        create: Callable[[objects.World], objects.PhysicsEntity],
     ) -> None:
         self.name = name
         self.image = image
@@ -25,18 +25,18 @@ class InventoryItem:
 HOTBAR: list[InventoryItem] = [
     InventoryItem(
         "Box",
-        assets.WOOD_BOX,
-        lambda scope: objects.WoodBox(scope, 1),
+        assets.STONE_WEDGE,
+        lambda scope: objects.StoneWedge(scope, 1),
     ),
     InventoryItem(
         "Ball",
-        assets.WOOD_BALL,
-        lambda scope: objects.WoodBall(scope, 1),
+        assets.STONE_BOX,
+        lambda scope: objects.StoneBox(scope, 1),
     ),
     InventoryItem(
         "Thin Plank",
-        assets.WOOD_PLANK,
-        lambda scope: objects.WoodPlankThin(scope, 1),
+        assets.STONE_TRIANGLE,
+        lambda scope: objects.StoneTriangle(scope, 1),
     ),
     InventoryItem(
         "Thick Plank",
@@ -83,7 +83,7 @@ class TheGame(PhysGame):
     def setup(self):
         self.pause_simulation()
 
-        scope = objects.EntityScope(self.space)
+        world = objects.World(self.space)
 
         floor_segment = pymunk.Segment(
             self.space.static_body,
@@ -95,9 +95,9 @@ class TheGame(PhysGame):
         floor_segment.elasticity = 0.4
 
         self.space.add(floor_segment)
-        self.scope = scope
+        self.world = world
 
-        self.current_dragging_entity: objects.RigidEntity | None = None
+        self.current_dragging_entity: objects.PhysicsEntity | None = None
 
         self.background_image = pygame.transform.scale(
             assets.BACKGROUND_1,
@@ -147,7 +147,7 @@ class TheGame(PhysGame):
             name_label.visible = False
 
             def on_mouse_down(*_, item=item):
-                new_entity = item.create_entity(self.scope)
+                new_entity = item.create_entity(self.world)
                 new_entity.body.position = mouse.get_pos()
                 self.current_dragging_entity = new_entity
 
@@ -179,10 +179,14 @@ class TheGame(PhysGame):
             # yay
             self.space.reindex_shapes_for_body(body)
 
+        if self.is_simulation_running:
+            for entity in self.world.all_entities.copy():
+                entity.update(dt)
+
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(self.background_image)
 
-        for entity in self.scope.entities:
+        for entity in self.world.all_entities:
             entity.draw(out)
 
     def on_draw_interface(self, out: pygame.Surface):
@@ -196,20 +200,20 @@ class TheGame(PhysGame):
     def on_collision_post_solve(
         self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
     ):
-        body_1, body_2 = arbiter.bodies
+        body_a, body_b = arbiter.bodies
 
-        entity_1 = self.scope.get_entity_from_body(body_1)
+        entity_a = self.world.get_physics_entity_from_body(body_a)
 
-        if entity_1 is not None:
-            entity_1.on_collision(arbiter)
+        if entity_a is not None:
+            entity_a.on_collision(arbiter)
 
-        entity_2 = self.scope.get_entity_from_body(body_2)
+        entity_b = self.world.get_physics_entity_from_body(body_b)
 
-        if entity_2 is not None:
-            entity_2.on_collision(arbiter)
+        if entity_b is not None:
+            entity_b.on_collision(arbiter)
 
     def on_mouse_left_down(self, pos: tuple[int, int]):
-        for entity in self.scope.entities:
+        for entity in self.world.physical_entities:
             if point_in_body(pos, entity.body):
                 self.current_dragging_entity = entity
                 break
