@@ -1,4 +1,5 @@
 import pymunk
+import pygame
 
 from .entity import Entity, CorporealEntity
 
@@ -9,6 +10,7 @@ class Level:
 
     It also manages the physics of all CorporealEntity objects stored in it.
     """
+
     space: pymunk.Space
     entities: set[Entity]
 
@@ -16,10 +18,25 @@ class Level:
 
     def __init__(self) -> None:
         space = pymunk.Space()
+        space.gravity = (0, 800)
 
         self.space = space
         self.entities = set()
         self._body_to_entity = {}
+
+    def update_physics(self, dt: float):
+        for entity in self.entities:
+            entity.update_physics(dt)
+
+        self.space.step(dt)
+
+    def update(self, dt: float):
+        for entity in self.entities:
+            entity.update(dt)
+
+    def display(self, screen: pygame.Surface):
+        for entity in self.entities:
+            entity.display(screen)
 
     # Body->Entity mapping
     def register_entity_body(self, entity: CorporealEntity):

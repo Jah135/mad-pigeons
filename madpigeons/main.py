@@ -1,9 +1,9 @@
 import pygame
 import pymunk
 from typing import Any, Callable
-from pygame import draw, mouse
+from pygame import draw, mouse, key
 
-from game import PhysGame
+from game import Game
 from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2
 import objects
 import assets
@@ -14,7 +14,7 @@ class InventoryItem:
         self,
         name: str,
         image: pygame.Surface,
-        create: Callable[[objects.World], objects.PhysicsEntity],
+        create: Callable[[objects.Level], objects.CorporealEntity],
     ) -> None:
         self.name = name
         self.image = image
@@ -26,42 +26,42 @@ HOTBAR: list[InventoryItem] = [
     InventoryItem(
         "Box",
         assets.STONE_WEDGE_0,
-        lambda scope: objects.StoneWedge(scope, 1),
+        lambda scope: objects.stone.Wedge(scope),
     ),
     InventoryItem(
         "Ball",
         assets.STONE_BOX_0,
-        lambda scope: objects.StoneBox(scope, 1),
+        lambda scope: objects.stone.Box(scope),
     ),
     InventoryItem(
         "Thin Plank",
         assets.STONE_TRIANGLE_0,
-        lambda scope: objects.StoneTriangle(scope, 1),
+        lambda scope: objects.stone.Triangle(scope),
     ),
     InventoryItem(
         "Thick Plank",
         assets.WOOD_PLANK_THICK,
-        lambda scope: objects.WoodPlankThick(scope, 1),
+        lambda scope: objects.wood.PlankThick(scope),
     ),
     InventoryItem(
         "Triangle",
         assets.WOOD_TRIANGLE,
-        lambda scope: objects.WoodTriangle(scope, 1),
+        lambda scope: objects.wood.Triangle(scope),
     ),
     InventoryItem(
         "Wedge",
         assets.WOOD_WEDGE,
-        lambda scope: objects.WoodWedge(scope, 1),
+        lambda scope: objects.wood.Wedge(scope),
     ),
     InventoryItem(
         "Pig",
         assets.BIG_PIG,
-        lambda scope: objects.Piggy(scope, 1),
+        lambda scope: objects.pig.Pig(scope),
     ),
     InventoryItem(
         "TNT",
         assets.TNT,
-        lambda scope: objects.TNT(scope, 1),
+        lambda scope: objects.special.TNT(scope),
     ),
 ]
 HOTBAR_SLOT_SIZE = 70
@@ -73,20 +73,17 @@ def point_in_body(point: tuple[float, float], body: pymunk.Body):
             return True
 
 
-class TheGame(PhysGame):
+class TheGame(Game):
     window_width = 1000
     window_height = 564
-    gravity = 500
     title = "Mad Pigeons™ (not angry birds)"
     icon = assets.RED_BIRD
 
     def setup(self):
-        self.pause_simulation()
-
-        world = objects.World(self.space)
+        test_level = objects.Level()
 
         floor_segment = pymunk.Segment(
-            self.space.static_body,
+            test_level.space.static_body,
             (-1e4, self.window_height * 0.9 + 70),
             (1e4, self.window_height * 0.9 + 70),
             90,
@@ -94,10 +91,10 @@ class TheGame(PhysGame):
         floor_segment.friction = 0.6
         floor_segment.elasticity = 0.4
 
-        self.space.add(floor_segment)
-        self.world = world
+        test_level.space.add(floor_segment)
 
-        self.current_dragging_entity: objects.PhysicsEntity | None = None
+        self.current_level = test_level
+        self.current_dragging_entity: objects.CorporealEntity | None = None
 
         self.background_image = pygame.transform.scale(
             assets.BACKGROUND_1,
@@ -147,7 +144,7 @@ class TheGame(PhysGame):
             name_label.visible = False
 
             def on_mouse_down(*_, item=item):
-                new_entity = item.create_entity(self.world)
+                new_entity = item.create_entity(self.current_level)
                 new_entity.body.position = mouse.get_pos()
                 self.current_dragging_entity = new_entity
 
@@ -166,54 +163,44 @@ class TheGame(PhysGame):
         self.screen_ui_container.invalidate()
 
     def on_update(self, dt: float):
-        super().on_update(dt)
-
         entity = self.current_dragging_entity
 
         if entity != None:
+            keys = key.get_pressed()
+
+            rotate_sign = (-1 if keys[pygame.K_q] else 0) + (
+                1 if keys[pygame.K_e] else 0
+            )
+
             body = entity.body
             body.position = mouse.get_pos()
             body.velocity = (0, 0)
+            body.angular_velocity = 0
+            body.angle += dt * rotate_sign * 3.14
 
             # apparently this fixes the problem where dragging while paused wouldnt actually update the position of the shape
             # yay
-            self.space.reindex_shapes_for_body(body)
+            self.current_level.space.reindex_shapes_for_body(body)
 
-        if self.is_simulation_running:
-            for entity in self.world.all_entities.copy():
-                entity.update(dt)
+        self.current_level.update(dt)
+        self.current_level.update_physics(dt)
 
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(self.background_image)
 
-        for entity in self.world.all_entities:
-            entity.draw(out)
+        self.current_level.display(out)
 
     def on_draw_interface(self, out: pygame.Surface):
         # NOAH TEST ASSETS HERE
         # out.blit(assets.LARGE_STONE_SQUARE, (100, 100))
 
-        # self.screen_ui_container.debug_draw_descendants(out)
         self.screen_ui_container.draw_to(out)
 
-    # event handlers
-    def on_collision_post_solve(
-        self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
-    ):
-        body_a, body_b = arbiter.bodies
-
-        entity_a = self.world.get_physics_entity_from_body(body_a)
-
-        if entity_a is not None:
-            entity_a.on_collision(arbiter)
-
-        entity_b = self.world.get_physics_entity_from_body(body_b)
-
-        if entity_b is not None:
-            entity_b.on_collision(arbiter)
-
     def on_mouse_left_down(self, pos: tuple[int, int]):
-        for entity in self.world.physical_entities:
+        for entity in self.current_level.entities:
+            if not isinstance(entity, objects.CorporealEntity):
+                continue
+
             if point_in_body(pos, entity.body):
                 self.current_dragging_entity = entity
                 break
@@ -228,22 +215,11 @@ class TheGame(PhysGame):
             delta_y = pos[1] - self._last_mouse_pos[1]
 
             self.current_dragging_entity.body.position = pos
-            self.current_dragging_entity.body.velocity += (
-                delta_x * 20, delta_y * 20)
+            self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
             self.current_dragging_entity = None
 
     def on_mouse_move(self, pos: tuple[int, int]):
-        # self.testframe.position = UDim2(pos[0], 0, pos[1], 0)
-        # self.testframe.invalidate()
-
         self.screen_ui_container._propogate_on_mouse_move(*pos)
-
-    def on_key_down(self, key: str):
-        if key == "space":
-            if self.is_simulation_running:
-                self.pause_simulation()
-            else:
-                self.resume_simulation()
 
 
 game = TheGame()
