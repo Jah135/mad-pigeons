@@ -1,6 +1,6 @@
 import pymunk
 
-from .entity import Entity
+from .entity import Entity, CorporealEntity
 
 
 class Level:
@@ -12,16 +12,33 @@ class Level:
     space: pymunk.Space
     entities: set[Entity]
 
-    def __init__(self) -> None:
-        self.space = pymunk.Space()
-        self.entities = set()
+    _body_to_entity: dict[pymunk.Body, CorporealEntity]
 
+    def __init__(self) -> None:
+        space = pymunk.Space()
+
+        self.space = space
+        self.entities = set()
+        self._body_to_entity = {}
+
+    # Body->Entity mapping
+    def register_entity_body(self, entity: CorporealEntity):
+        self._body_to_entity[entity.body] = entity
+
+    def deregister_entity_body(self, entity: CorporealEntity):
+        del self._body_to_entity[entity.body]
+
+    def get_entity_from_body(self, body: pymunk.Body) -> CorporealEntity | None:
+        return self._body_to_entity.get(body)
+
+    # Body
     def add_body(self, body: pymunk.Body):
         self.space.add(body, *body.shapes)
 
     def remove_body(self, body: pymunk.Body):
         self.space.remove(body, *body.shapes)
 
+    # Entity
     def add_entity(self, entity: Entity) -> None:
         self.entities.add(entity)
 

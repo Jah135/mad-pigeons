@@ -25,22 +25,22 @@ class InventoryItem:
 HOTBAR: list[InventoryItem] = [
     InventoryItem(
         "Box",
-        assets.STONE_WEDGE,
+        assets.STONE_WEDGE_0,
         lambda scope: objects.StoneWedge(scope, 1),
     ),
     InventoryItem(
         "Ball",
-        assets.STONE_BOX,
+        assets.STONE_BOX_0,
         lambda scope: objects.StoneBox(scope, 1),
     ),
     InventoryItem(
         "Thin Plank",
-        assets.STONE_TRIANGLE,
+        assets.STONE_TRIANGLE_0,
         lambda scope: objects.StoneTriangle(scope, 1),
     ),
     InventoryItem(
         "Thick Plank",
-        assets.WOOD_RECTANGLE,
+        assets.WOOD_PLANK_THICK,
         lambda scope: objects.WoodPlankThick(scope, 1),
     ),
     InventoryItem(
@@ -228,7 +228,8 @@ class TheGame(PhysGame):
             delta_y = pos[1] - self._last_mouse_pos[1]
 
             self.current_dragging_entity.body.position = pos
-            self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
+            self.current_dragging_entity.body.velocity += (
+                delta_x * 20, delta_y * 20)
             self.current_dragging_entity = None
 
     def on_mouse_move(self, pos: tuple[int, int]):
