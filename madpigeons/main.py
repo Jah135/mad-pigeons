@@ -192,7 +192,7 @@ class TheGame(Game):
 
     def on_draw_interface(self, out: pygame.Surface):
         # NOAH TEST ASSETS HERE
-        # out.blit(assets.LARGE_STONE_SQUARE, (100, 100))
+        out.blit(assets.LARGE_WOOD_BALL_0, (100, 100))
 
         self.screen_ui_container.draw_to(out)
 
@@ -205,14 +205,14 @@ class TheGame(Game):
                 self.current_dragging_entity = entity
                 break
 
-        self.screen_ui_container._propogate_on_mouse_down(*pos)
+    #     self.screen_ui_container._propogate_on_mouse_down(*pos)
 
-    def on_mouse_left_up(self, pos: tuple[int, int]):
-        self.screen_ui_container._propogate_on_mouse_up(*pos)
+    # def on_mouse_left_up(self, pos: tuple[int, int]):
+    #     self.screen_ui_container._propogate_on_mouse_up(*pos)
 
-        if self.current_dragging_entity != None:
-            delta_x = pos[0] - self._last_mouse_pos[0]
-            delta_y = pos[1] - self._last_mouse_pos[1]
+    #     if self.current_dragging_entity != None:
+    #         delta_x = pos[0] - self._last_mouse_pos[0]
+    #         delta_y = pos[1] - self._last_mouse_pos[1]
 
             self.current_dragging_entity.body.position = pos
             self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
