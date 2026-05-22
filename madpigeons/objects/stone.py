@@ -1,6 +1,6 @@
 import pymunk
-from pygame import transform
 
+from . import polygon
 from .entity import FragileEntity
 from .constants import (
     BOX_WIDTH,
@@ -9,11 +9,6 @@ from .constants import (
     SLAB_XY_RATIO,
     LARGE_PLANK_LENGTH,
     LARGE_PLANK_XY_RATIO,
-)
-from .generate import (
-    generate_rectangle_polygon_points,
-    generate_triangle_polygon_points,
-    generate_wedge_polygon_points,
 )
 import assets
 
@@ -37,7 +32,7 @@ class Box(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_rectangle(BOX_WIDTH))
         shape.density = STONE_DENSITY
         shape.friction = STONE_FRICTION
         shape.elasticity = STONE_ELASTICITY
@@ -58,7 +53,7 @@ class Wedge(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_wedge_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_wedge(BOX_WIDTH))
         shape.density = STONE_DENSITY
         shape.friction = STONE_FRICTION
         shape.elasticity = STONE_ELASTICITY
@@ -79,7 +74,7 @@ class Triangle(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_triangle_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_triangle(BOX_WIDTH))
         shape.density = STONE_DENSITY
         shape.friction = STONE_FRICTION
         shape.elasticity = STONE_ELASTICITY
@@ -100,7 +95,26 @@ class Slab(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH, 2))
+        shape = pymunk.Poly(body, polygon.generate_rectangle(BOX_WIDTH, 2))
+        shape.density = STONE_DENSITY
+        shape.friction = STONE_FRICTION
+        shape.elasticity = STONE_ELASTICITY
+
+        return body
+
+
+class LargePlank(FragileEntity):
+    max_health = 70
+    damage_resistance = STONE_DAMAGE_RESISTANCE
+    damage_textures = (assets.LARGE_STONE_PLANK_3, assets.LARGE_STONE_PLANK_2,
+                       assets.LARGE_STONE_PLANK_1, assets.LARGE_STONE_PLANK_0)
+    texture_dimensions = (LARGE_PLANK_LENGTH,
+                          LARGE_PLANK_LENGTH // LARGE_PLANK_XY_RATIO)
+
+    def create_body(self) -> pymunk.Body:
+        body = pymunk.Body()
+        shape = pymunk.Poly(body, polygon.generate_rectangle(
+            LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO))
         shape.density = STONE_DENSITY
         shape.friction = STONE_FRICTION
         shape.elasticity = STONE_ELASTICITY

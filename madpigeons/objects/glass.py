@@ -1,114 +1,143 @@
 import pymunk
 from pygame import transform
 
+from . import polygon
 from .entity import FragileEntity
 from .constants import (
     BOX_WIDTH,
-    LARGE_BALL_RADIUS,
     SLAB_WIDTH,
     SLAB_XY_RATIO,
     LARGE_PLANK_LENGTH,
     LARGE_PLANK_XY_RATIO,
-)
-from .generate import (
-    generate_rectangle_polygon_points,
-    generate_triangle_polygon_points,
-    generate_wedge_polygon_points,
+    LARGE_BALL_RADIUS,
+    SMALL_BALL_RADIUS
 )
 import assets
 
 # glass properties
-STANDARD_GLASS_ELASTICITY = 0.1
-STANDARD_GLASS_FRICTION = 0.1
-STANDARD_GLASS_DENSITY = 0.9
-STANDARD_GLASS_DAMAGE_RESISTANCE = 1.3
+GLASS_ELASTICITY = 0.1
+GLASS_FRICTION = 0.1
+GLASS_DENSITY = 0.9
+GLASS_DAMAGE_RESISTANCE = 1.1
 
 
 class Box(FragileEntity):
     max_health = 30
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = (assets.GLASS_BOX_0,)
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.GLASS_BOX_3, assets.GLASS_BOX_2,
+                       assets.GLASS_BOX_1, assets.GLASS_BOX_0)
+    texture_dimensions = (BOX_WIDTH, BOX_WIDTH)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH))
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape = pymunk.Poly(body, polygon.generate_rectangle(BOX_WIDTH))
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body
 
 
 class Wedge(FragileEntity):
     max_health = 30
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = ()
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.GLASS_WEDGE_3, assets.GLASS_WEDGE_2,
+                       assets.GLASS_WEDGE_1, assets.GLASS_WEDGE_0)
+    texture_dimensions = (BOX_WIDTH, BOX_WIDTH)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_wedge_polygon_points(BOX_WIDTH))
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape = pymunk.Poly(body, polygon.generate_wedge(BOX_WIDTH))
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body
 
 
 class Triangle(FragileEntity):
     max_health = 30
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = ()
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.GLASS_TRIANGLE_3, assets.GLASS_TRIANGLE_2,
+                       assets.GLASS_TRIANGLE_1, assets.GLASS_TRIANGLE_0)
+    texture_dimensions = (BOX_WIDTH, BOX_WIDTH)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_triangle_polygon_points(BOX_WIDTH))
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape = pymunk.Poly(body, polygon.generate_triangle(BOX_WIDTH))
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body
 
 
 class Slab(FragileEntity):
     max_health = 20
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = ()
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.GLASS_SLAB_3, assets.GLASS_SLAB_2,
+                       assets.GLASS_SLAB_1, assets.GLASS_SLAB_0)
+    texture_dimensions = (SLAB_WIDTH, SLAB_WIDTH // SLAB_XY_RATIO)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH, 2))
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape = pymunk.Poly(body, polygon.generate_rectangle(
+            SLAB_WIDTH, SLAB_XY_RATIO))
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
+
+        return body
+
+
+class LargePlank(FragileEntity):
+    max_health = 30
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.LARGE_GLASS_PLANK_3, assets.LARGE_GLASS_PLANK_2,
+                       assets.LARGE_GLASS_PLANK_1, assets.LARGE_GLASS_PLANK_0)
+    texture_dimensions = (LARGE_PLANK_LENGTH,
+                          LARGE_PLANK_LENGTH // LARGE_PLANK_XY_RATIO)
+
+    def create_body(self) -> pymunk.Body:
+        body = pymunk.Body()
+        shape = pymunk.Poly(body, polygon.generate_rectangle(
+            LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO))
+        shape.density = GLASS_DENSITY
+        shape.friction = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body
 
 
 class LargeBall(FragileEntity):
     max_health = 30
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = ()
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.LARGE_GLASS_BALL_3, assets.LARGE_GLASS_BALL_2,
+                       assets.LARGE_GLASS_BALL_1, assets.LARGE_GLASS_BALL_0)
+    texture_dimensions = (LARGE_BALL_RADIUS * 2, LARGE_BALL_RADIUS * 2)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
         shape = pymunk.Circle(body, LARGE_BALL_RADIUS)
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body
 
 
 class SmallBall(FragileEntity):
     max_health = 15
-    damage_resistance = STANDARD_GLASS_DAMAGE_RESISTANCE
-    damage_frames = ()
+    damage_resistance = GLASS_DAMAGE_RESISTANCE
+    damage_textures = (assets.SMALL_GLASS_BALL_3, assets.SMALL_GLASS_BALL_2,
+                       assets.SMALL_GLASS_BALL_1, assets.SMALL_GLASS_BALL_0)
+    texture_dimensions = (SMALL_BALL_RADIUS * 2, SMALL_BALL_RADIUS * 2)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Circle(body, LARGE_BALL_RADIUS // 2)
-        shape.density = STANDARD_GLASS_DENSITY
-        shape.friciton = STANDARD_GLASS_FRICTION
-        shape.elasticity = STANDARD_GLASS_ELASTICITY
+        shape = pymunk.Circle(body, SMALL_BALL_RADIUS)
+        shape.density = GLASS_DENSITY
+        shape.friciton = GLASS_FRICTION
+        shape.elasticity = GLASS_ELASTICITY
 
         return body

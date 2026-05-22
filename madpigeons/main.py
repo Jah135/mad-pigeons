@@ -36,8 +36,10 @@ HOTBAR: list[InventoryItem] = [
         objects.wood.Triangle,
     ),
     InventoryItem("Wood Slab", assets.WOOD_SLAB_0, objects.wood.Slab),
-    InventoryItem("Large Wood Ball", assets.LARGE_WOOD_BALL_0, objects.wood.LargeBall),
-    InventoryItem("Small Wood Ball", assets.SMALL_WOOD_BALL_0, objects.wood.SmallBall),
+    InventoryItem("Large Wood Ball", assets.LARGE_WOOD_BALL_0,
+                  objects.wood.LargeBall),
+    InventoryItem("Small Wood Ball", assets.SMALL_WOOD_BALL_0,
+                  objects.wood.SmallBall),
 ]
 HOTBAR_SLOT_SIZE = 70
 
@@ -143,7 +145,7 @@ class TheGame(Game):
     def on_update(self, dt: float):
         entity = self.current_dragging_entity
 
-        if entity != None:
+        if entity is not None:
             keys = key.get_pressed()
 
             rotate_sign = (-1 if keys[pygame.K_q] else 0) + (
@@ -188,12 +190,13 @@ class TheGame(Game):
     def on_mouse_left_up(self, pos: tuple[int, int]):
         self.screen_ui_container._propogate_on_mouse_up(*pos)
 
-        if self.current_dragging_entity != None:
+        if self.current_dragging_entity is not None:
             delta_x = pos[0] - self._last_mouse_pos[0]
             delta_y = pos[1] - self._last_mouse_pos[1]
 
             self.current_dragging_entity.body.position = pos
-            self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
+            self.current_dragging_entity.body.velocity += (
+                delta_x * 20, delta_y * 20)
             self.current_dragging_entity = None
 
     def on_mouse_move(self, pos: tuple[int, int]):

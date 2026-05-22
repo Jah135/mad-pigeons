@@ -1,8 +1,7 @@
 import pymunk
-from pygame import transform
 
+from . import polygon
 from .entity import FragileEntity
-from .generate import generate_rectangle_polygon_points
 from .constants import BOX_WIDTH
 from .wood import (
     WOOD_DENSITY,
@@ -20,7 +19,7 @@ class TNT(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_rectangle(BOX_WIDTH))
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
         shape.elasticity = WOOD_ELASTICITY

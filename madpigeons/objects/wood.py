@@ -1,6 +1,6 @@
 import pymunk
-from pygame import transform
 
+from . import polygon
 from .entity import FragileEntity
 from .constants import (
     BOX_WIDTH,
@@ -10,11 +10,6 @@ from .constants import (
     SLAB_XY_RATIO,
     LARGE_PLANK_LENGTH,
     LARGE_PLANK_XY_RATIO,
-)
-from .generate import (
-    generate_rectangle_polygon_points,
-    generate_triangle_polygon_points,
-    generate_wedge_polygon_points,
 )
 import assets
 
@@ -38,7 +33,7 @@ class Box(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_rectangle(BOX_WIDTH))
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
         shape.elasticity = WOOD_ELASTICITY
@@ -59,7 +54,7 @@ class Wedge(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_wedge_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_wedge(BOX_WIDTH))
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
         shape.elasticity = WOOD_ELASTICITY
@@ -80,7 +75,7 @@ class Triangle(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_triangle_polygon_points(BOX_WIDTH))
+        shape = pymunk.Poly(body, polygon.generate_triangle(BOX_WIDTH))
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
         shape.elasticity = WOOD_ELASTICITY
@@ -102,7 +97,7 @@ class Slab(FragileEntity):
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
         shape = pymunk.Poly(
-            body, generate_rectangle_polygon_points(SLAB_WIDTH, SLAB_XY_RATIO)
+            body, polygon.generate_rectangle(SLAB_WIDTH, SLAB_XY_RATIO)
         )
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
@@ -129,7 +124,8 @@ class LargePlank(FragileEntity):
         body = pymunk.Body()
         shape = pymunk.Poly(
             body,
-            generate_rectangle_polygon_points(LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO),
+            polygon.generate_rectangle(
+                LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO),
         )
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION

@@ -92,7 +92,8 @@ class GuiObject:
             child_dimensions = Vec2(*child_bounds.size)
 
             top_left = top_left.min(child_topleft)
-            size = size.max((child_topleft - self.absolute_position) + child_dimensions)
+            size = size.max(
+                (child_topleft - self.absolute_position) + child_dimensions)
 
         return Rect(top_left.tup, (size + (self.absolute_position - top_left)).tup)
 
@@ -130,12 +131,12 @@ class GuiObject:
 
         current_parent = self.parent
 
-        if current_parent != None:
+        if current_parent is not None:
             current_parent.children.remove(self)
 
         self.parent = new_parent
 
-        if new_parent != None:
+        if new_parent is not None:
             new_parent.children.add(self)
 
     def check_is_in_bounds(self, x: int, y: int) -> bool:
@@ -196,7 +197,7 @@ class GuiObject:
 
         self.is_stale = True
 
-        if self.parent != None:
+        if self.parent is not None:
             self.parent.invalidate()
 
     def _reconcile(self):
@@ -327,7 +328,8 @@ class TextLabel(GuiObject):
                 for dy in range(-thickness, thickness + 1):
                     if dx == 0 and dy == 0:
                         continue
-                    render_texture.blit(outline_surface, (blit_x + dx, blit_y + dy))
+                    render_texture.blit(
+                        outline_surface, (blit_x + dx, blit_y + dy))
 
         render_texture.blit(text_surface, (blit_x, blit_y))
 
@@ -352,7 +354,8 @@ class ImageLabel(GuiObject):
             self.image, min(self.absolute_size.tup) / max(self.image.size)
         )
         render_texture.blit(
-            scaled_image, ((self.absolute_size / 2) - Vec2(*scaled_image.size) / 2).tup
+            scaled_image, ((self.absolute_size / 2) -
+                           Vec2(*scaled_image.size) / 2).tup
         )
 
     def set_image(self, new_image: Surface):
