@@ -5,6 +5,8 @@ from .udim2 import UDim2
 from .enums import UIState, HorizontalAlignment, VerticalAlignment
 from .eventsignal import EventSignal
 
+Color = tuple[int, int, int, int]
+
 
 class GuiObject:
     """An abstract class for all UI objects"""
@@ -232,7 +234,7 @@ class GuiObject:
 class Frame(GuiObject):
     """A basic rectangular frame."""
 
-    color: tuple[int, int, int, int]
+    color: Color
 
     def __init__(
         self,
@@ -241,20 +243,31 @@ class Frame(GuiObject):
         position: UDim2 = UDim2(),
         size: UDim2 = UDim2(),
     ) -> None:
-        self.color: tuple[int, int, int, int] = (255, 255, 255, 255)
+        self.color = (255, 255, 255, 255)
 
         super().__init__(parent, anchor_point, position, size)
 
     def render(self, render_texture: Surface):
         render_texture.fill(self.color)
 
-    def set_color(self, new_color: tuple[int, int, int, int]):
+    def set_color(self, new_color: Color):
         self.color = new_color
         self.invalidate()
 
 
 class TextLabel(GuiObject):
     """A label for displaying text maybe"""
+
+    text: str
+    text_size: int
+    text_color: Color
+    text_font: str | None
+
+    text_x_alignment: HorizontalAlignment
+    text_y_alignment: VerticalAlignment
+
+    text_outline_color: Color
+    text_outline_thickness: int
 
     def __init__(
         self,
@@ -264,16 +277,20 @@ class TextLabel(GuiObject):
         size: UDim2 = UDim2(),
         text: str = "Label",
         text_size: int = 16,
-        text_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+        text_color: Color = (0, 0, 0, 255),
         text_font: str | None = None,
         text_x_alignment: HorizontalAlignment = HorizontalAlignment.Center,
         text_y_alignment: VerticalAlignment = VerticalAlignment.Center,
+        text_outline_color: Color = (0, 0, 0, 0),
+        text_outline_thickness: int = 1,
     ) -> None:
         self.text = text
         self.text_size = text_size
         self.text_color = text_color
         self.text_x_alignment = text_x_alignment
         self.text_y_alignment = text_y_alignment
+        self.text_outline_color = text_outline_color
+        self.text_outline_thickness = text_outline_thickness
 
         self._font = font.Font(text_font, self.text_size)
 
@@ -284,20 +301,35 @@ class TextLabel(GuiObject):
 
         total_width, total_height = self.absolute_size.tup
 
-        rel_x_pos = 0
-        rel_y_pos = 0
+        blit_x = 0
+        blit_y = 0
 
-        if self.text_x_alignment == HorizontalAlignment.Center:
-            rel_x_pos = total_width / 2 - text_surface.width / 2
-        elif self.text_x_alignment == HorizontalAlignment.Right:
-            rel_x_pos = total_width - text_surface.width
+        match self.text_x_alignment:
+            case HorizontalAlignment.Center:
+                blit_x = total_width // 2 - (text_surface.width // 2)
+            case HorizontalAlignment.Right:
+                blit_x = total_height - text_surface.height
 
-        if self.text_y_alignment == VerticalAlignment.Center:
-            rel_y_pos = total_height / 2 - text_surface.height / 2
-        elif self.text_y_alignment == VerticalAlignment.Bottom:
-            rel_y_pos = total_height - text_surface.height
+        match self.text_y_alignment:
+            case VerticalAlignment.Center:
+                blit_y = total_height / 2 - text_surface.height / 2
+            case VerticalAlignment.Bottom:
+                blit_y = total_height - text_surface.height
 
-        render_texture.blit(text_surface, (rel_x_pos, rel_y_pos))
+        if self.text_outline_color[3] != 0 and self.text_outline_thickness > 0:
+            thickness = self.text_outline_thickness
+
+            outline_surface = self._font.render(
+                self.text, True, self.text_outline_color
+            )
+
+            for dx in range(-thickness, thickness + 1):
+                for dy in range(-thickness, thickness + 1):
+                    if dx == 0 and dy == 0:
+                        continue
+                    render_texture.blit(outline_surface, (blit_x + dx, blit_y + dy))
+
+        render_texture.blit(text_surface, (blit_x, blit_y))
 
 
 class ImageLabel(GuiObject):

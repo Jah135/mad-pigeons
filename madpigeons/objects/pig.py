@@ -1,7 +1,7 @@
 import pymunk
 
 from .entity import FragileEntity
-from .constants import STANDARD_PIG_RADIUS
+from .constants import PIG_RADIUS
 import assets
 
 
@@ -15,11 +15,11 @@ class Pig(FragileEntity):
         assets.SMALL_PIG_HURT_1,
         assets.SMALL_PIG,
     )
-    texture_dimensions = (STANDARD_PIG_RADIUS * 2, STANDARD_PIG_RADIUS * 2)
+    texture_dimensions = (PIG_RADIUS * 2, PIG_RADIUS * 2)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Circle(body, STANDARD_PIG_RADIUS)
+        shape = pymunk.Circle(body, PIG_RADIUS)
         shape.density = 0.3
         shape.friction = 0.4
         shape.elasticity = 0.5

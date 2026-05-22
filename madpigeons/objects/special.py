@@ -3,11 +3,11 @@ from pygame import transform
 
 from .entity import FragileEntity
 from .generate import generate_rectangle_polygon_points
-from .constants import STANDARD_BOX_SIZE
+from .constants import BOX_WIDTH
 from .wood import (
-    STANDARD_WOOD_DENSITY,
-    STANDARD_WOOD_ELASTICITY,
-    STANDARD_WOOD_FRICTION,
+    WOOD_DENSITY,
+    WOOD_ELASTICITY,
+    WOOD_FRICTION,
 )
 import assets
 
@@ -16,14 +16,14 @@ class TNT(FragileEntity):
     max_health = 50
     damage_resistance = 1.3
     damage_textures = (assets.TNT,)
-    texture_dimensions = (STANDARD_BOX_SIZE, STANDARD_BOX_SIZE)
+    texture_dimensions = (BOX_WIDTH, BOX_WIDTH)
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, generate_rectangle_polygon_points(STANDARD_BOX_SIZE))
-        shape.density = STANDARD_WOOD_DENSITY
-        shape.friction = STANDARD_WOOD_FRICTION
-        shape.elasticity = STANDARD_WOOD_ELASTICITY
+        shape = pymunk.Poly(body, generate_rectangle_polygon_points(BOX_WIDTH))
+        shape.density = WOOD_DENSITY
+        shape.friction = WOOD_FRICTION
+        shape.elasticity = WOOD_ELASTICITY
 
         return body
 
