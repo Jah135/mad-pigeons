@@ -84,31 +84,3 @@ class Game:
 
             self._last_dt = dt
             self._last_mouse_pos = mouse_pos
-
-
-class PhysGame(Game):
-    gravity = 100
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.space = pymunk.Space()
-        self.space.gravity = (0, self.gravity)
-
-        self.space.on_collision(post_solve=self.on_collision_post_solve)
-
-        self.is_simulation_running = True
-
-    def on_collision_post_solve(
-        self, arbiter: pymunk.Arbiter, space: pymunk.Space, data: Any
-    ): ...
-
-    def pause_simulation(self):
-        self.is_simulation_running = False
-
-    def resume_simulation(self):
-        self.is_simulation_running = True
-
-    def on_update(self, dt: float):
-        if self.is_simulation_running:
-            self.space.step(dt)
