@@ -61,6 +61,7 @@ class CorporealEntity(Entity):
     body: pymunk.Body
     texture: pygame.Surface
     texture_dimensions: tuple[int, int]
+    texture_offset: tuple[int, int] = (0, 0)
 
     def __init__(self, level: Level) -> None:
         super().__init__(level)
@@ -74,7 +75,8 @@ class CorporealEntity(Entity):
     def create_body(self) -> pymunk.Body:
         """An abstract method for use in subclasses.
 
-        This method is used to create a pymunk Body that will be used for physics collisions."""
+        This method is used to create a pymunk Body that will be used for physics collisions.
+        """
         ...
 
     def on_collide_begin(self, arbiter: pymunk.Arbiter) -> None:
@@ -110,7 +112,7 @@ class CorporealEntity(Entity):
         ...
 
     def set_texture(self, new_texture: pygame.Surface):
-        self.texture = transform.scale(new_texture, self.texture_dimensions)
+        self.texture = transform.smoothscale(new_texture, self.texture_dimensions)
 
     def remove(self) -> None:
         super().remove()
@@ -118,12 +120,12 @@ class CorporealEntity(Entity):
         self.level.deregister_entity_body(self)
 
     def display(self, screen: pygame.Surface):
-        rotated_image = transform.rotate(
-            self.texture, -degrees(self.body.angle))
+        rotated_image = transform.rotate(self.texture, degrees(-self.body.angle))
         screen.blit(
             rotated_image,
-            self.body.position - (rotated_image.width / 2,
-                                  rotated_image.height / 2),
+            self.body.position
+            + pymunk.Vec2d(*self.texture_offset).rotated(self.body.angle)
+            - (rotated_image.width / 2, rotated_image.height / 2),
         )
 
 
@@ -142,6 +144,14 @@ class FragileEntity(CorporealEntity):
         self.health = self.max_health
         self._update_image()
 
+    def on_collide_post_solve(self, arbiter: pymunk.Arbiter) -> None:
+        shape_a, shape_b = arbiter.shapes
+        total_mass = shape_a.mass + shape_b.mass
+        impulse = arbiter.total_impulse.length / total_mass
+
+        if impulse > 200:
+            self.inflict_damage((impulse - 200) / 200)
+
     def on_death(self) -> None:
         """
         An abstract method for use in subclasses.
@@ -151,13 +161,19 @@ class FragileEntity(CorporealEntity):
         ...
 
     def _update_image(self):
-        index = int(self.health / self.max_health *
-                    (len(self.damage_textures) - 1))
+        index = round(self.health / self.max_health * (len(self.damage_textures) - 1))
 
         self.set_texture(self.damage_textures[index])
 
     def inflict_damage(self, damage: float) -> None:
-        self.health -= damage * (1.1**-self.damage_resistance)
+        if self.health <= 0:
+            return
+
+        weighted_damage = damage * (1.1**-self.damage_resistance)
+
+        self.health -= weighted_damage
+
+        # print(damage, weighted_damage, self.health)
 
         if self.health <= 0:
             self.on_death()

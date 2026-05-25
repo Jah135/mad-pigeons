@@ -14,13 +14,13 @@ import assets
 
 # stone properties
 STONE_ELASTICITY = 0.2
-STONE_FRICTION = 0.6
-STONE_DENSITY = 0.8
+STONE_FRICTION = 0.7
+STONE_DENSITY = 1.5
 STONE_DAMAGE_RESISTANCE = 3
 
 
 class Box(FragileEntity):
-    max_health = 150
+    max_health = 10
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.STONE_BOX_3,
@@ -41,7 +41,7 @@ class Box(FragileEntity):
 
 
 class Wedge(FragileEntity):
-    max_health = 150
+    max_health = 10
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.STONE_WEDGE_3,
@@ -62,7 +62,7 @@ class Wedge(FragileEntity):
 
 
 class Triangle(FragileEntity):
-    max_health = 150
+    max_health = 10
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.STONE_TRIANGLE_3,
@@ -83,7 +83,7 @@ class Triangle(FragileEntity):
 
 
 class Slab(FragileEntity):
-    max_health = 100
+    max_health = 10
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.STONE_SLAB_3,
@@ -104,17 +104,24 @@ class Slab(FragileEntity):
 
 
 class LargePlank(FragileEntity):
-    max_health = 70
+    max_health = 8
     damage_resistance = STONE_DAMAGE_RESISTANCE
-    damage_textures = (assets.LARGE_STONE_PLANK_3, assets.LARGE_STONE_PLANK_2,
-                       assets.LARGE_STONE_PLANK_1, assets.LARGE_STONE_PLANK_0)
-    texture_dimensions = (LARGE_PLANK_LENGTH,
-                          LARGE_PLANK_LENGTH // LARGE_PLANK_XY_RATIO)
+    damage_textures = (
+        assets.LARGE_STONE_PLANK_3,
+        assets.LARGE_STONE_PLANK_2,
+        assets.LARGE_STONE_PLANK_1,
+        assets.LARGE_STONE_PLANK_0,
+    )
+    texture_dimensions = (
+        LARGE_PLANK_LENGTH,
+        LARGE_PLANK_LENGTH // LARGE_PLANK_XY_RATIO,
+    )
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(body, polygon.generate_rectangle(
-            LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO))
+        shape = pymunk.Poly(
+            body, polygon.generate_rectangle(LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO)
+        )
         shape.density = STONE_DENSITY
         shape.friction = STONE_FRICTION
         shape.elasticity = STONE_ELASTICITY
@@ -123,7 +130,7 @@ class LargePlank(FragileEntity):
 
 
 class LargeBall(FragileEntity):
-    max_health = 140
+    max_health = 10
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.LARGE_STONE_BALL_3,
@@ -144,7 +151,7 @@ class LargeBall(FragileEntity):
 
 
 class SmallBall(FragileEntity):
-    max_health = 80
+    max_health = 6
     damage_resistance = STONE_DAMAGE_RESISTANCE
     damage_textures = (
         assets.SMALL_STONE_BALL_3,

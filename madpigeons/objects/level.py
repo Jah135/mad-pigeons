@@ -1,6 +1,8 @@
 import pymunk
 import pygame
 
+from pymunk.pygame_util import DrawOptions
+
 from .entity import Entity, CorporealEntity
 
 
@@ -14,17 +16,23 @@ class Level:
     space: pymunk.Space
     entities: set[Entity]
 
+    _remove_entities: set[Entity]
     _body_to_entity: dict[pymunk.Body, CorporealEntity]
 
     def __init__(self) -> None:
         space = pymunk.Space()
         space.gravity = (0, 800)
 
-        space.on_collision(begin=self._on_collision_begin, pre_solve=self._on_collision_pre_solve,
-                           post_solve=self._on_collision_post_solve, separate=self._on_collision_separate)
+        space.on_collision(
+            begin=self._on_collision_begin,
+            pre_solve=self._on_collision_pre_solve,
+            post_solve=self._on_collision_post_solve,
+            separate=self._on_collision_separate,
+        )
 
         self.space = space
         self.entities = set()
+        self._remove_entities = set()
         self._body_to_entity = dict()
 
     # collision handlers
@@ -56,6 +64,9 @@ class Level:
             entity_b.on_collide_post_solve(arbiter)
 
     def _on_collision_separate(self, arbiter: pymunk.Arbiter, *_):
+        if arbiter.is_removal:
+            return
+
         entity_a, entity_b = self.get_entities_from_bodies(*arbiter.bodies)
 
         if entity_a is not None:
@@ -78,10 +89,17 @@ class Level:
         for entity in self.entities:
             entity.update(dt)
 
-    def display(self, screen: pygame.Surface):
+        for entity in self._remove_entities:
+            self.entities.remove(entity)
+        self._remove_entities.clear()
+
+    def display(self, screen: pygame.Surface, debug: bool = False):
         """Displays all of the level's entities to the screen."""
-        for entity in self.entities:
-            entity.display(screen)
+        if debug:
+            self.space.debug_draw(DrawOptions(screen))
+        else:
+            for entity in self.entities:
+                entity.display(screen)
 
     # Body->Entity mapping
     def register_entity_body(self, entity: CorporealEntity):
@@ -92,7 +110,9 @@ class Level:
         """Unmaps an entity from it's body. This is meant to be used internally."""
         del self._body_to_entity[entity.body]
 
-    def get_entities_from_bodies(self, *bodies: pymunk.Body) -> tuple[CorporealEntity | None, ...]:
+    def get_entities_from_bodies(
+        self, *bodies: pymunk.Body
+    ) -> tuple[CorporealEntity | None, ...]:
         """
         Returns a tuple of entities associated with the specified bodies, in the same order that they were given.
 
@@ -118,4 +138,4 @@ class Level:
         """Removes an entity from this level's `entities` set."""
         if entity not in self.entities:
             return
-        self.entities.remove(entity)
+        self._remove_entities.add(entity)

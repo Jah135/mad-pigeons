@@ -1,11 +1,10 @@
-from pygame import draw, font, transform, Surface, Rect, SRCALPHA
+from pygame import draw, Surface, Rect, SRCALPHA
 
-from .vec2 import Vec2
-from .udim2 import UDim2
-from .enums import UIState, HorizontalAlignment, VerticalAlignment
-from .eventsignal import EventSignal
 
-Color = tuple[int, int, int, int]
+from ..udim2 import UDim2
+from ..vec2 import Vec2
+from ..eventsignal import EventSignal
+from ..enums import UIState
 
 
 class GuiObject:
@@ -92,8 +91,7 @@ class GuiObject:
             child_dimensions = Vec2(*child_bounds.size)
 
             top_left = top_left.min(child_topleft)
-            size = size.max(
-                (child_topleft - self.absolute_position) + child_dimensions)
+            size = size.max((child_topleft - self.absolute_position) + child_dimensions)
 
         return Rect(top_left.tup, (size + (self.absolute_position - top_left)).tup)
 
@@ -230,134 +228,3 @@ class GuiObject:
         An abstract method that is overridden by subclasses to generate a Surface for rendering to the screen.
         """
         ...
-
-
-class Frame(GuiObject):
-    """A basic rectangular frame."""
-
-    color: Color
-
-    def __init__(
-        self,
-        parent: GuiObject | None = None,
-        anchor_point: Vec2 = Vec2(),
-        position: UDim2 = UDim2(),
-        size: UDim2 = UDim2(),
-    ) -> None:
-        self.color = (255, 255, 255, 255)
-
-        super().__init__(parent, anchor_point, position, size)
-
-    def render(self, render_texture: Surface):
-        render_texture.fill(self.color)
-
-    def set_color(self, new_color: Color):
-        self.color = new_color
-        self.invalidate()
-
-
-class TextLabel(GuiObject):
-    """A label for displaying text maybe"""
-
-    text: str
-    text_size: int
-    text_color: Color
-    text_font: str | None
-
-    text_x_alignment: HorizontalAlignment
-    text_y_alignment: VerticalAlignment
-
-    text_outline_color: Color
-    text_outline_thickness: int
-
-    def __init__(
-        self,
-        parent: GuiObject | None = None,
-        anchor_point: Vec2 = Vec2(),
-        position: UDim2 = UDim2(),
-        size: UDim2 = UDim2(),
-        text: str = "Label",
-        text_size: int = 16,
-        text_color: Color = (0, 0, 0, 255),
-        text_font: str | None = None,
-        text_x_alignment: HorizontalAlignment = HorizontalAlignment.Center,
-        text_y_alignment: VerticalAlignment = VerticalAlignment.Center,
-        text_outline_color: Color = (0, 0, 0, 0),
-        text_outline_thickness: int = 1,
-    ) -> None:
-        self.text = text
-        self.text_size = text_size
-        self.text_color = text_color
-        self.text_x_alignment = text_x_alignment
-        self.text_y_alignment = text_y_alignment
-        self.text_outline_color = text_outline_color
-        self.text_outline_thickness = text_outline_thickness
-
-        self._font = font.Font(text_font, self.text_size)
-
-        super().__init__(parent, anchor_point, position, size)
-
-    def render(self, render_texture: Surface):
-        text_surface = self._font.render(self.text, True, self.text_color)
-
-        total_width, total_height = self.absolute_size.tup
-
-        blit_x = 0
-        blit_y = 0
-
-        match self.text_x_alignment:
-            case HorizontalAlignment.Center:
-                blit_x = total_width // 2 - (text_surface.width // 2)
-            case HorizontalAlignment.Right:
-                blit_x = total_height - text_surface.height
-
-        match self.text_y_alignment:
-            case VerticalAlignment.Center:
-                blit_y = total_height / 2 - text_surface.height / 2
-            case VerticalAlignment.Bottom:
-                blit_y = total_height - text_surface.height
-
-        if self.text_outline_color[3] != 0 and self.text_outline_thickness > 0:
-            thickness = self.text_outline_thickness
-
-            outline_surface = self._font.render(
-                self.text, True, self.text_outline_color
-            )
-
-            for dx in range(-thickness, thickness + 1):
-                for dy in range(-thickness, thickness + 1):
-                    if dx == 0 and dy == 0:
-                        continue
-                    render_texture.blit(
-                        outline_surface, (blit_x + dx, blit_y + dy))
-
-        render_texture.blit(text_surface, (blit_x, blit_y))
-
-
-class ImageLabel(GuiObject):
-    """A label for displaying images maybe"""
-
-    def __init__(
-        self,
-        parent: GuiObject | None = None,
-        anchor_point: Vec2 = Vec2(),
-        position: UDim2 = UDim2(),
-        size: UDim2 = UDim2(),
-        image: Surface = Surface((1, 1)),
-    ) -> None:
-        self.image = image
-
-        super().__init__(parent, anchor_point, position, size)
-
-    def render(self, render_texture: Surface):
-        scaled_image = transform.scale_by(
-            self.image, min(self.absolute_size.tup) / max(self.image.size)
-        )
-        render_texture.blit(
-            scaled_image, ((self.absolute_size / 2) -
-                           Vec2(*scaled_image.size) / 2).tup
-        )
-
-    def set_image(self, new_image: Surface):
-        self.image = new_image
-        self.invalidate()

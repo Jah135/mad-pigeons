@@ -1,10 +1,10 @@
 import pygame
 import pymunk
-from typing import Any, Callable
-from pygame import draw, mouse, key
+from typing import Callable
+from pygame import mouse, key
 
 from game import Game
-from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2
+from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2, Color
 import objects
 import assets
 
@@ -26,22 +26,51 @@ HOTBAR: list[InventoryItem] = [
     InventoryItem("Wood Box", assets.WOOD_BOX_0, objects.wood.Box),
     InventoryItem("Wood Wedge", assets.WOOD_WEDGE_0, objects.wood.Wedge),
     InventoryItem(
-        "Large Wood Plank",
-        assets.LARGE_WOOD_PLANK_0,
-        objects.wood.LargePlank,
+        "Large Wood Plank", assets.LARGE_WOOD_PLANK_0, objects.wood.LargePlank
     ),
-    InventoryItem(
-        "Wood Triangle",
-        assets.WOOD_TRIANGLE_0,
-        objects.wood.Triangle,
-    ),
+    InventoryItem("Wood Triangle", assets.WOOD_TRIANGLE_0, objects.wood.Triangle),
     InventoryItem("Wood Slab", assets.WOOD_SLAB_0, objects.wood.Slab),
-    InventoryItem("Large Wood Ball", assets.LARGE_WOOD_BALL_0,
-                  objects.wood.LargeBall),
-    InventoryItem("Small Wood Ball", assets.SMALL_WOOD_BALL_0,
-                  objects.wood.SmallBall),
+    InventoryItem("Large Wood Ball", assets.LARGE_WOOD_BALL_0, objects.wood.LargeBall),
+    InventoryItem("Small Wood Ball", assets.SMALL_WOOD_BALL_0, objects.wood.SmallBall),
+    InventoryItem("TNT", assets.TNT, objects.special.TNT),
 ]
-HOTBAR_SLOT_SIZE = 70
+# HOTBAR: list[InventoryItem] = [
+#     InventoryItem("Stone Box", assets.STONE_BOX_0, objects.stone.Box),
+#     InventoryItem("Stone Wedge", assets.STONE_WEDGE_0, objects.stone.Wedge),
+#     InventoryItem(
+#         "Large Stone Plank", assets.LARGE_STONE_PLANK_0, objects.stone.LargePlank
+#     ),
+#     InventoryItem("Stone Triangle", assets.STONE_TRIANGLE_0, objects.stone.Triangle),
+#     InventoryItem("Stone Slab", assets.STONE_SLAB_0, objects.stone.Slab),
+#     InventoryItem(
+#         "Large Stone Ball", assets.LARGE_STONE_BALL_0, objects.stone.LargeBall
+#     ),
+#     InventoryItem(
+#         "Small Stone Ball", assets.SMALL_STONE_BALL_0, objects.stone.SmallBall
+#     ),
+# ]
+# HOTBAR: list[InventoryItem] = [
+#     InventoryItem("Glass Box", assets.GLASS_BOX_0, objects.glass.Box),
+#     InventoryItem("Glass Wedge", assets.GLASS_WEDGE_0, objects.glass.Wedge),
+#     InventoryItem(
+#         "Large Glass Plank", assets.LARGE_GLASS_PLANK_0, objects.glass.LargePlank
+#     ),
+#     InventoryItem("Glass Triangle", assets.GLASS_TRIANGLE_0, objects.glass.Triangle),
+#     InventoryItem("Glass Slab", assets.GLASS_SLAB_0, objects.glass.Slab),
+#     InventoryItem(
+#         "Large Glass Ball", assets.LARGE_GLASS_BALL_0, objects.glass.LargeBall
+#     ),
+#     InventoryItem(
+#         "Small Glass Ball", assets.SMALL_GLASS_BALL_0, objects.glass.SmallBall
+#     ),
+# ]
+# HOTBAR: list[InventoryItem] = [
+#     InventoryItem("Regular Pig", assets.MEDIUM_PIG, objects.pig.MinionPig),
+#     InventoryItem("Foreman Pig", assets.FOREMAN_PIG, objects.pig.ForemanPig),
+#     InventoryItem("Corporal Pig", assets.CORPORAL_PIG, objects.pig.CorporalPig),
+#     InventoryItem("King Pig", assets.KING_PIG, objects.pig.KingPig),
+# ]
+HOTBAR_SLOT_SIZE = 50
 
 
 def point_in_body(point: tuple[float, float], body: pymunk.Body):
@@ -73,7 +102,7 @@ class TheGame(Game):
         self.current_level = test_level
         self.current_dragging_entity: objects.CorporealEntity | None = None
 
-        self.background_image = pygame.transform.scale(
+        self.background_image = pygame.transform.smoothscale(
             assets.BACKGROUND_1,
             (self.window_width, self.window_height),
         )
@@ -100,7 +129,7 @@ class TheGame(Game):
                 UDim2(x_scale=index / (hotbar_count - 1)),
                 UDim2(x_offset=HOTBAR_SLOT_SIZE, y_offset=HOTBAR_SLOT_SIZE),
             )
-            frame.color = (0, 0, 0, 80)
+            frame.color = Color(0, 0, 0, 80)
             frame.invalidate()
 
             ImageLabel(
@@ -117,8 +146,8 @@ class TheGame(Game):
                 UDim2(x_scale=0.5),
                 size=UDim2(0, 2, 20, 0),
                 text=item.name,
-                text_color=(0, 0, 0, 255),
-                text_outline_color=(255, 255, 255, 10),
+                text_color=Color(0, 0, 0, 255),
+                text_outline_color=Color(255, 255, 255, 10),
                 text_outline_thickness=1,
             )
             name_label.visible = False
@@ -168,11 +197,12 @@ class TheGame(Game):
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(self.background_image)
 
+        # self.current_level.display(out, True)
         self.current_level.display(out)
 
     def on_draw_interface(self, out: pygame.Surface):
         # NOAH TEST ASSETS HERE
-        # out.blit(assets.LARGE_WOOD_BALL_0, (100, 100))
+        out.blit(assets.BLAST, (100, 100))
 
         self.screen_ui_container.draw_to(out)
 
@@ -195,8 +225,7 @@ class TheGame(Game):
             delta_y = pos[1] - self._last_mouse_pos[1]
 
             self.current_dragging_entity.body.position = pos
-            self.current_dragging_entity.body.velocity += (
-                delta_x * 20, delta_y * 20)
+            self.current_dragging_entity.body.velocity += (delta_x * 20, delta_y * 20)
             self.current_dragging_entity = None
 
     def on_mouse_move(self, pos: tuple[int, int]):

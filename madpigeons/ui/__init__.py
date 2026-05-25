@@ -1,3 +1,8 @@
 from .vec2 import Vec2
 from .udim2 import UDim2
-from .classes import GuiObject, Frame, TextLabel, ImageLabel
+from .color import Color
+
+from .widgets.guiobject import GuiObject
+from .widgets.frame import Frame
+from .widgets.imagelabel import ImageLabel
+from .widgets.textlabel import TextLabel

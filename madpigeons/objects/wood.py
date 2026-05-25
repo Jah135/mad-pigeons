@@ -17,11 +17,11 @@ import assets
 WOOD_ELASTICITY = 0.5
 WOOD_FRICTION = 0.8
 WOOD_DENSITY = 0.4
-WOOD_DAMAGE_RESISTANCE = 1.1
+WOOD_DAMAGE_RESISTANCE = 1
 
 
 class Box(FragileEntity):
-    max_health = 90
+    max_health = 10
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.WOOD_BOX_3,
@@ -42,7 +42,7 @@ class Box(FragileEntity):
 
 
 class Wedge(FragileEntity):
-    max_health = 90
+    max_health = 10
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.WOOD_WEDGE_3,
@@ -63,7 +63,7 @@ class Wedge(FragileEntity):
 
 
 class Triangle(FragileEntity):
-    max_health = 90
+    max_health = 10
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.WOOD_TRIANGLE_3,
@@ -84,7 +84,7 @@ class Triangle(FragileEntity):
 
 
 class Slab(FragileEntity):
-    max_health = 50
+    max_health = 10
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.WOOD_SLAB_3,
@@ -96,9 +96,7 @@ class Slab(FragileEntity):
 
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
-        shape = pymunk.Poly(
-            body, polygon.generate_rectangle(SLAB_WIDTH, SLAB_XY_RATIO)
-        )
+        shape = pymunk.Poly(body, polygon.generate_rectangle(SLAB_WIDTH, SLAB_XY_RATIO))
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
         shape.elasticity = WOOD_ELASTICITY
@@ -107,7 +105,7 @@ class Slab(FragileEntity):
 
 
 class LargePlank(FragileEntity):
-    max_health = 30
+    max_health = 8
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.LARGE_WOOD_PLANK_3,
@@ -124,8 +122,7 @@ class LargePlank(FragileEntity):
         body = pymunk.Body()
         shape = pymunk.Poly(
             body,
-            polygon.generate_rectangle(
-                LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO),
+            polygon.generate_rectangle(LARGE_PLANK_LENGTH, LARGE_PLANK_XY_RATIO),
         )
         shape.density = WOOD_DENSITY
         shape.friction = WOOD_FRICTION
@@ -135,7 +132,7 @@ class LargePlank(FragileEntity):
 
 
 class LargeBall(FragileEntity):
-    max_health = 70
+    max_health = 10
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.LARGE_WOOD_BALL_3,
@@ -156,7 +153,7 @@ class LargeBall(FragileEntity):
 
 
 class SmallBall(FragileEntity):
-    max_health = 30
+    max_health = 6
     damage_resistance = WOOD_DAMAGE_RESISTANCE
     damage_textures = (
         assets.SMALL_WOOD_BALL_3,

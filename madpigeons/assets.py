@@ -11,9 +11,7 @@ BACKGROUND_3 = pygame.image.load("./resources/backgrounds/background3.png")
 
 # birds
 BIRD_SPRITESHEET = pygame.image.load("./resources/spritesheets/birds.png")
-RED_BIRD = pygame.transform.scale_by(
-    BIRD_SPRITESHEET.subsurface((0, 0, 64, 64)), 0.5
-)
+RED_BIRD = BIRD_SPRITESHEET.subsurface((0, 0, 64, 64))
 
 # pigs
 PIG_SPRITESHEET = pygame.image.load("./resources/spritesheets/pigs.png")
@@ -229,7 +227,7 @@ SMALL_WOOD_SQUARE_2 = WOOD_SPRITESHEET.subsurface((441, 126, 19, 19))
 SMALL_WOOD_SQUARE_3 = WOOD_SPRITESHEET.subsurface((422, 357, 19, 19))
 
 # Glass
-GLASS_SPRITESHEET = pygame.image.load("./resources/spritesheets/glass.webp")
+GLASS_SPRITESHEET = pygame.image.load("./resources/spritesheets/glass.png")
 
 # Glass Box
 GLASS_BOX_0 = GLASS_SPRITESHEET.subsurface((0, 0, 84, 84))
@@ -246,14 +244,14 @@ GLASS_TRIANGLE_3 = GLASS_SPRITESHEET.subsurface((84, 169, 83, 82))
 # Glass Wedge
 GLASS_WEDGE_0 = GLASS_SPRITESHEET.subsurface((169, 1, 79, 80))
 GLASS_WEDGE_1 = GLASS_SPRITESHEET.subsurface((251, 1, 79, 80))
-GLASS_WEDGE_2 = GLASS_SPRITESHEET.subsurface((333, 169, 79, 80))
-GLASS_WEDGE_3 = GLASS_SPRITESHEET.subsurface((415, 169, 79, 80))
+GLASS_WEDGE_2 = GLASS_SPRITESHEET.subsurface((333, 1, 79, 80))
+GLASS_WEDGE_3 = GLASS_SPRITESHEET.subsurface((415, 1, 79, 80))
 
 # Large Glass Ball
-LARGE_GLASS_BALL_0 = GLASS_SPRITESHEET.subsurface((169, 235, 72, 73))
-LARGE_GLASS_BALL_1 = GLASS_SPRITESHEET.subsurface((169, 311, 72, 73))
-LARGE_GLASS_BALL_2 = GLASS_SPRITESHEET.subsurface((170, 83, 72, 73))
-LARGE_GLASS_BALL_3 = GLASS_SPRITESHEET.subsurface((170, 158, 72, 73))
+LARGE_GLASS_BALL_0 = GLASS_SPRITESHEET.subsurface((169, 235, 75, 75))
+LARGE_GLASS_BALL_1 = GLASS_SPRITESHEET.subsurface((169, 311, 75, 75))
+LARGE_GLASS_BALL_2 = GLASS_SPRITESHEET.subsurface((170, 83, 75, 75))
+LARGE_GLASS_BALL_3 = GLASS_SPRITESHEET.subsurface((170, 158, 75, 75))
 
 # Small Glass Ball
 SMALL_GLASS_BALL_0 = GLASS_SPRITESHEET.subsurface((246, 84, 41, 42))
@@ -278,7 +276,15 @@ GLASS_MEDIUM_PLANK_0 = GLASS_SPRITESHEET.subsurface((288, 259, 167, 21))
 
 
 # Misc
-BAD_PIGGIES_SPRITESHEET = pygame.image.load(
-    "./resources/spritesheets/bad_piggies.webp")
+BAD_PIGGIES_SPRITESHEET = pygame.image.load("./resources/spritesheets/bad_piggies.webp")
+CLASSIC_SPRITESHEET = pygame.image.load("./resources/spritesheets/full-sprite.png")
 
 TNT = BAD_PIGGIES_SPRITESHEET.subsurface((554, 566, 106, 106))
+
+BLAST = CLASSIC_SPRITESHEET.subsurface((336, 824, 88, 89))
+SMOKE_0 = CLASSIC_SPRITESHEET.subsurface((888, 639, 42, 42))
+SMOKE_1 = CLASSIC_SPRITESHEET.subsurface((754, 708, 83, 80))
+SMOKE_2 = CLASSIC_SPRITESHEET.subsurface((333, 728, 100, 94))
+SMOKE_3 = CLASSIC_SPRITESHEET.subsurface((408, 200, 115, 112))
+SMOKE_4 = CLASSIC_SPRITESHEET.subsurface((274, 200, 134, 131))
+SMOKE_5 = CLASSIC_SPRITESHEET.subsurface((129, 200, 145, 139))
