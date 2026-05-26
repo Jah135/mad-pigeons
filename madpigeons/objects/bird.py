@@ -1,8 +1,11 @@
 import pymunk
 
+from .level import Level
+
 from .entity import CorporealEntity
-from .constants import BIRD_RADIUS
 import assets
+
+BIRD_RADIUS = 15
 
 
 class Bird(CorporealEntity):
@@ -11,11 +14,16 @@ class Bird(CorporealEntity):
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
         shape = pymunk.Circle(body, BIRD_RADIUS)
-        shape.density = 0.3
+        shape.density = 3
         shape.friction = 0.4
 
         return body
 
+    def activate_ability(self): ...
+
 
 class BirdRed(Bird):
-    texture = assets.RED_BIRD
+    def __init__(self, level: Level) -> None:
+        super().__init__(level)
+
+        self.set_texture(assets.RED_BIRD)
