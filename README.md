@@ -2,6 +2,7 @@
 not a python Angry Birds clone.
 
 ## `.bat` download command:
+(only usable if you have Python 3.13+ & git installed)
 ```bat
 @echo off
 rmdir "./mad-pigeons" /S /Q
