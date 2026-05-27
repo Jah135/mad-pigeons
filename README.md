@@ -11,15 +11,8 @@ Definitely not an Angry Birds clone.
 ## 03 Camp Installation Guide
 TODO: streamline this down into just one command, maybe something with curl?
 
-Use this to download all of the required assets and code:
-```bat
-@echo off
-rmdir "./mad-pigeons" /S /Q
-git clone https://github.com/Jah135/mad-pigeons.git
-pip install pymunk
-pip install pygame-ce
-```
-then run this to start Mad Pigeons:
-```
-python ./mad-pigeons/madpigeons/main.py
-```
+1. Open `Command Prompt`
+2. Copy and paste this command into the terminal and press Enter:
+`git clone https://github.com/Jah135/mad-pigeons.git && cd ./mad-pigeons && ./install_packages.bat`
+3. Then copy and paste this into the terminal to start it after running the previous command:
+`python ./madpigeons/main.py`
