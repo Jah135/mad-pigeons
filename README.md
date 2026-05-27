@@ -8,7 +8,7 @@ Definitely not an Angry Birds clone.
 - pymunk - `pip install pymunk`
 - pygame (community edition) - `pip install pygame-ce`
 
-## 03 Camp Installation Guide:
+## 03 Camp Installation Guide
 TODO: streamline this down into just one command, maybe something with curl?
 
 Use this to download all of the required assets and code:
