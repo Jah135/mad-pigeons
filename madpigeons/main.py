@@ -20,6 +20,10 @@ class GameMode(Enum):
 
 
 class InventoryItem:
+    name: str
+    image: pygame.Surface
+    create: Callable[[objects.Level], objects.CorporealEntity]
+
     def __init__(
         self,
         name: str,
@@ -108,77 +112,27 @@ class TheGame(Game):
 
     mouse_down_start: tuple[int, int] | None = None
 
+    edit_snapshot: list[objects.EntitySnapshot]
     current_mode: GameMode
     current_hotbar: str = ""
 
-    def setup(self):
-        main_level = objects.Level()
-
-        self.current_mode = GameMode.Edit
-        self.remaining_birds = [
-            objects.bird.BirdRed(main_level),
-            objects.bird.BirdRed(main_level),
-            objects.bird.BirdRed(main_level),
-        ]
-
-        floor_segment = pymunk.Segment(
-            main_level.space.static_body,
-            (-1e4, self.window_height * 0.9 + 130),
-            (1e4, self.window_height * 0.9 + 130),
-            90,
-        )
-        floor_segment.friction = 0.6
-        floor_segment.elasticity = 0.4
-
-        main_level.space.add(floor_segment)
-
-        self.current_level = main_level
-        self.current_dragging_entity: objects.CorporealEntity | None = None
-
-        self.setup_ui()
-
-    def setup_ui(self):
-        screen_ui_container = GuiObject(
-            size=UDim2(x_offset=self.window_width, y_offset=self.window_height)
-        )
-        self.screen_ui_container = screen_ui_container
-
-        def button_down(*_):
-            self.set_mode(
-                GameMode.Play if self.current_mode == GameMode.Edit else GameMode.Edit
-            )
-
-        mode_button = ImageLabel(
-            screen_ui_container,
-            anchor_point=Vec2(1, 0),
-            position=UDim2(-5, 1, 5, 0),
-            size=UDim2(75, 0, 75, 0),
-            image=assets.PLAY_BUTTON,
-        )
-        mode_button.mouse_down.connect(button_down)
-        self.mode_button = mode_button
-
-        # setup hotbar
-        hotbar_container = Frame(  # size will be updated in set_hotbar
-            screen_ui_container,
-            anchor_point=Vec2(0.5, 0),
-            position=UDim2(0, 0.5, 5, 0),
-            color=Color(30, 30, 30, 127),
-            border_color=Color(255, 255, 255, 255),
-            # border_thickness=2,
-            roundness=8,
-        )
-
-        self.hotbar_container = hotbar_container
-        self.set_hotbar("Wood")
-
     def set_mode(self, new_mode: GameMode):
         if new_mode == GameMode.Play:
+            self.edit_snapshot = self.current_level.take_snapshot()
+
+            self.remaining_birds = [
+                objects.bird.BirdRed(self.current_level),
+                objects.bird.BirdRed(self.current_level),
+                objects.bird.BirdRed(self.current_level),
+            ]
+
             self.current_dragging_entity = None
             self.hotbar_container.visible = False
             self.hotbar_container.invalidate()
             self.mode_button.set_image(assets.EDIT_BUTTON)
         elif new_mode == GameMode.Edit:
+            self.current_level.load_snapshot(self.edit_snapshot)
+
             self.hotbar_container.visible = True
             self.hotbar_container.invalidate()
             self.mode_button.set_image(assets.PLAY_BUTTON)
@@ -250,6 +204,60 @@ class TheGame(Game):
             background_frame.mouse_down.connect(mouse_down)
             background_frame.mouse_enter.connect(mouse_enter)
             background_frame.mouse_leave.connect(mouse_leave)
+
+    def setup(self):
+        main_level = objects.Level()
+
+        self.current_mode = GameMode.Edit
+
+        floor_segment = pymunk.Segment(
+            main_level.space.static_body,
+            (-1e4, self.window_height * 0.9 + 130),
+            (1e4, self.window_height * 0.9 + 130),
+            90,
+        )
+        floor_segment.friction = 0.6
+        floor_segment.elasticity = 0.4
+
+        main_level.space.add(floor_segment)
+
+        self.current_level = main_level
+        self.current_dragging_entity: objects.CorporealEntity | None = None
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        screen_ui_container = GuiObject(
+            size=UDim2(x_offset=self.window_width, y_offset=self.window_height)
+        )
+        self.screen_ui_container = screen_ui_container
+
+        def button_down(*_):
+            self.set_mode(
+                GameMode.Play if self.current_mode == GameMode.Edit else GameMode.Edit
+            )
+
+        mode_button = ImageLabel(
+            screen_ui_container,
+            anchor_point=Vec2(1, 0),
+            position=UDim2(-5, 1, 5, 0),
+            size=UDim2(75, 0, 75, 0),
+            image=assets.PLAY_BUTTON,
+        )
+        mode_button.mouse_down.connect(button_down)
+        self.mode_button = mode_button
+
+        # setup hotbar
+        hotbar_container = Frame(  # size will be updated in set_hotbar
+            screen_ui_container,
+            anchor_point=Vec2(0.5, 0),
+            position=UDim2(0, 0.5, 5, 0),
+            color=Color(20, 20, 30, 127),
+            roundness=8,
+        )
+
+        self.hotbar_container = hotbar_container
+        self.set_hotbar("Wood")
 
     def on_update(self, dt: float):
         if self.current_mode == GameMode.Edit:

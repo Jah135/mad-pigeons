@@ -3,7 +3,7 @@ import pygame
 
 from pymunk.pygame_util import DrawOptions
 
-from .entity import Entity, CorporealEntity
+from .entity import EntitySnapshot, Entity, CorporealEntity
 
 
 class Level:
@@ -34,6 +34,22 @@ class Level:
         self.entities = set()
         self._remove_entities = set()
         self._body_to_entity = dict()
+
+    def take_snapshot(self) -> list[EntitySnapshot]:
+        snapshots = []
+
+        for entity in self.entities:
+            snapshots.append(EntitySnapshot(entity))
+
+        return snapshots
+
+    def load_snapshot(self, entity_snapshots: list[EntitySnapshot]):
+        self.clear()
+
+        for snapshot in entity_snapshots:
+            snapshot.recreate(self)
+
+        self.space.step(1)
 
     # collision handlers
     def _on_collision_begin(self, arbiter: pymunk.Arbiter, *_):
@@ -76,22 +92,20 @@ class Level:
             entity_b.on_collide_separate(arbiter, entity_a)
 
     # external updating
-
     def update_physics(self, dt: float):
         """Performs a physics step update."""
         for entity in self.entities:
             entity.update_physics(dt)
 
-        self.space.step(dt)
+        for _ in range(10):
+            self.space.step(dt / 10)
 
     def update(self, dt: float):
         """Performs an update step."""
         for entity in self.entities:
             entity.update(dt)
 
-        for entity in self._remove_entities:
-            self.entities.remove(entity)
-        self._remove_entities.clear()
+        self._remove_scheduled()
 
     def display(self, screen: pygame.Surface, debug: bool = False):
         """Displays all of the level's entities to the screen."""
@@ -139,3 +153,14 @@ class Level:
         if entity not in self.entities:
             return
         self._remove_entities.add(entity)
+
+    def clear(self) -> None:
+        for entity in self.entities:
+            entity.remove()
+
+        self._remove_scheduled()
+
+    def _remove_scheduled(self) -> None:
+        for entity in self._remove_entities:
+            self.entities.remove(entity)
+        self._remove_entities.clear()

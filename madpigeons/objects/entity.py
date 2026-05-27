@@ -5,12 +5,26 @@ import pymunk
 
 from pygame import transform
 from math import degrees
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, Type, Self, Any
 
 if TYPE_CHECKING:
     from .level import Level
 
 from .constants import get_collision_force
+
+
+class EntitySnapshot:
+    data: dict[str, Any]
+    creator: Type[Entity]
+
+    def __init__(self, entity: Entity) -> None:
+        self.data = dict()
+        self.creator = entity.__class__
+
+        entity.write_snapshot(self.data)
+
+    def recreate(self, level: Level) -> Entity:
+        return self.creator.from_snapshot(level, self.data)
 
 
 class Entity:
@@ -23,6 +37,23 @@ class Entity:
     def __init__(self, level: Level) -> None:
         self.level = level
         level.add_entity(self)
+
+    def write_snapshot(self, data: dict):
+        """
+        An abstract method for use in subclasses.
+
+        This method is used for saving attributes of an Entity in a dictionary, for later use in `from_snapshot`.
+        """
+        ...
+
+    @classmethod
+    def from_snapshot(cls, level: Level, data: dict) -> Self:
+        """
+        An abstract method for use in subclasses.
+
+        This method is used for loading an entity from a previous snapshot taken with `write_snapshot`.
+        """
+        ...
 
     def update(self, dt: float) -> None:
         """
@@ -79,6 +110,20 @@ class CorporealEntity(Entity):
         self.body = new_body
         self.level.add_body(new_body)
         self.level.register_entity_body(self)
+
+    def write_snapshot(self, data: dict):
+        body = self.body
+
+        data["position"] = (body.position.x, body.position.y)
+        data["angle"] = body.angle
+
+    @classmethod
+    def from_snapshot(cls, level: Level, data: dict) -> Self:
+        self = cls(level)
+        self.body.position = data.get("position", (0, 0))
+        self.body.angle = data.get("angle", 0)
+
+        return self
 
     def create_body(self) -> pymunk.Body:
         """An abstract method for use in subclasses.
