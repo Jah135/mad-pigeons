@@ -1,7 +1,7 @@
 # mad-pigeons
 Totally not a python Angry Birds clone.
 
-## `.bat` download command:
+## 03 Camp Installation Guide:
 Use this to download all of the required assets and code:
 ```bat
 @echo off
