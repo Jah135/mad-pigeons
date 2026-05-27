@@ -3,7 +3,11 @@ not a python Angry Birds clone.
 
 ## `.bat` download command:
 ```bat
-TODO
+@echo off
+rmdir "./mad-pigeons" /S /Q
+git clone https://github.com/Jah135/mad-pigeons.git
+pip install pymunk
+pip install pygame-ce
 ```
 
 ## Requirements
