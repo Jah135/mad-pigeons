@@ -2,6 +2,8 @@
 Totally not a python Angry Birds clone.
 
 ## 03 Camp Installation Guide:
+TODO: streamline this down into just one command, maybe something with curl?
+
 Use this to download all of the required assets and code:
 ```bat
 @echo off
