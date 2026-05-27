@@ -1,5 +1,12 @@
 # mad-pigeons
-Totally not a python Angry Birds clone.
+Definitely not an Angry Birds clone.
+
+## Requirements
+- Python 3.13+
+
+### Modules
+- pymunk - `pip install pymunk`
+- pygame (community edition) - `pip install pygame-ce`
 
 ## 03 Camp Installation Guide:
 TODO: streamline this down into just one command, maybe something with curl?
@@ -16,10 +23,3 @@ then run this to start Mad Pigeons:
 ```
 python ./mad-pigeons/madpigeons/main.py
 ```
-
-## Requirements
-- Python 3.13+
-
-### Modules
-- pymunk - `pip install pymunk`
-- pygame (community edition) - `pip install pygame-ce`
