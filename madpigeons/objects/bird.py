@@ -1,8 +1,8 @@
 import pymunk
 
 from .level import Level
-
-from .entity import CorporealEntity
+from .constants import get_collision_force
+from .entity import CorporealEntity, FragileEntity
 import assets
 
 BIRD_RADIUS = 15
@@ -14,10 +14,21 @@ class Bird(CorporealEntity):
     def create_body(self) -> pymunk.Body:
         body = pymunk.Body()
         shape = pymunk.Circle(body, BIRD_RADIUS)
-        shape.density = 3
+        shape.collision_type = 1
+        shape.density = 1
         shape.friction = 0.4
 
         return body
+
+    def on_collide_post_solve(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
+        if isinstance(other, FragileEntity):
+            force = get_collision_force(arbiter)
+
+            if force > 100:
+                print("bird doing things")
+                other.inflict_damage(2 + force / 100)
 
     def activate_ability(self): ...
 

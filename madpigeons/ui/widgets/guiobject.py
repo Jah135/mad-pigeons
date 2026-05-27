@@ -1,5 +1,6 @@
-from pygame import draw, Surface, Rect, SRCALPHA
+from __future__ import annotations
 
+from pygame import draw, Surface, Rect, SRCALPHA
 
 from ..udim2 import UDim2
 from ..vec2 import Vec2
@@ -93,13 +94,13 @@ class GuiObject:
             top_left = top_left.min(child_topleft)
             size = size.max((child_topleft - self.absolute_position) + child_dimensions)
 
-        return Rect(top_left.tup, (size + (self.absolute_position - top_left)).tup)
+        return Rect(top_left.xy, (size + (self.absolute_position - top_left)).xy)
 
     @property
     def bounds(self) -> Rect:
         """The bounds of this GuiObject, relative to it's oldest ancestor."""
 
-        return Rect(self.absolute_position.tup, self.absolute_size.tup)
+        return Rect(self.absolute_position.xy, self.absolute_size.xy)
 
     @property
     def modern_texture(self) -> Surface:
@@ -110,14 +111,62 @@ class GuiObject:
 
         return self.texture
 
+    @property
+    def is_visible(self) -> bool:
+        """Returns whether this GuiObject is visible, based off of whether it's ancestor's are visible."""
+
+        if not self.visible:
+            return False
+
+        for ancestor in self.get_ancestors():
+            if not ancestor.visible:
+                return False
+
+        return True
+
     # actual methods you might be using
+    def get_ancestors(self) -> list[GuiObject]:
+        ancestors = []
+        current = self
+
+        while True:
+            current = current.parent
+
+            if current is None:
+                break
+            ancestors.append(current)
+
+        return ancestors
+
+    def invalidate(self):
+        """
+        Marks this Gui object and all of it's ancestors as stale.
+
+        ask me about push-pull based reactive signals
+        """
+
+        if self.is_stale:
+            return
+
+        self.is_stale = True
+
+        if self.parent is not None:
+            self.parent.invalidate()
+
+    def invalidate_parent(self):
+        """
+        Marks this GuiObject's parent as stale.
+        """
+        if self.parent is not None:
+            self.parent.invalidate()
+
     def draw_to(self, out: Surface):
         out.blit(self.modern_texture, self.content_bounds)
 
     def debug_draw_descendants(self, out: Surface):
         draw.rect(out, "blue", self.bounds, 2)
-        draw.rect(out, "yellow", self.content_bounds, 2)
-        draw.circle(out, "blue", self.absolute_position.tup, 4)
+        draw.rect(out, "yellow" if self.is_visible else "gray", self.content_bounds, 2)
+        draw.circle(out, "blue", self.absolute_position.xy, 4)
 
         for child in self.children:
             child.debug_draw_descendants(out)
@@ -137,6 +186,14 @@ class GuiObject:
         if new_parent is not None:
             new_parent.children.add(self)
 
+    def clear_children(self):
+        """Removes all GuiObjects parented directly under this GuiObject."""
+        for child in self.children:
+            child.parent = None
+
+        self.children.clear()
+        self.invalidate()
+
     def check_is_in_bounds(self, x: int, y: int) -> bool:
         """Returns whether the specified point is within the bounds of this GuiObject."""
 
@@ -152,6 +209,9 @@ class GuiObject:
 
     # event entry points
     def _propogate_on_mouse_down(self, x: int, y: int):
+        if not self.visible:
+            return
+
         if self.state == UIState.Hover:
             self.state = UIState.Press
             self.mouse_down.fire(x, y)
@@ -161,6 +221,9 @@ class GuiObject:
             child._propogate_on_mouse_down(x, y)
 
     def _propogate_on_mouse_up(self, x: int, y: int):
+        if not self.visible:
+            return
+
         if self.state == UIState.Press:
             self.state = UIState.Hover
             self.mouse_up.fire(x, y)
@@ -170,6 +233,9 @@ class GuiObject:
             child._propogate_on_mouse_up(x, y)
 
     def _propogate_on_mouse_move(self, x: int, y: int):
+        if not self.visible:
+            return
+
         if self.check_is_in_bounds(x, y):
             if self.state == UIState.Idle:
                 self.state = UIState.Hover
@@ -183,31 +249,16 @@ class GuiObject:
             child._propogate_on_mouse_move(x, y)
 
     # rendering stuff
-    def invalidate(self):
-        """
-        Marks this Gui object and all of it's ancestors as stale.
-
-        ask me about push-pull based reactive signals
-        """
-
-        if self.is_stale:
-            return
-
-        self.is_stale = True
-
-        if self.parent is not None:
-            self.parent.invalidate()
-
     def _reconcile(self):
         full_bounds = self.content_bounds
 
         contents_texture = Surface(full_bounds.size, SRCALPHA)
-        render_texture = Surface(self.absolute_size.tup, SRCALPHA)
+        render_texture = Surface(self.absolute_size.xy, SRCALPHA)
 
         self.render(render_texture)
 
         contents_texture.blit(
-            render_texture, (self.absolute_position - full_bounds.topleft).tup
+            render_texture, (self.absolute_position - full_bounds.topleft).xy
         )
 
         for child in self.children:
@@ -217,7 +268,7 @@ class GuiObject:
 
             contents_texture.blit(
                 child.modern_texture,
-                (Vec2(*child.content_bounds.topleft) - full_bounds.topleft).tup,
+                (Vec2(*child.content_bounds.topleft) - full_bounds.topleft).xy,
             )
 
         self.texture = contents_texture

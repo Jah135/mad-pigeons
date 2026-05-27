@@ -51,7 +51,7 @@ class TextLabel(GuiObject):
     def render(self, render_texture: Surface):
         text_surface = self._font.render(self.text, True, self.text_color.rgb)
 
-        total_width, total_height = self.absolute_size.tup
+        total_width, total_height = self.absolute_size.xy
 
         blit_x = 0
         blit_y = 0

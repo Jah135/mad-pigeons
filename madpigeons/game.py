@@ -43,7 +43,6 @@ class Game:
     def on_update(self, dt: float): ...
 
     def setup(self): ...
-    def setup_ui(self): ...
 
     # def
 
@@ -55,7 +54,6 @@ class Game:
         self.running = True
 
         self.setup()
-        self.setup_ui()
 
         while self.running:
             mouse_pos = mouse.get_pos()

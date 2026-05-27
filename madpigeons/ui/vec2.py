@@ -52,7 +52,7 @@ class Vec2:
         return Vec2(-self.x, -self.y)
 
     @property
-    def tup(self) -> tuple[float, float]:
+    def xy(self) -> tuple[float, float]:
         return (self.x, self.y)
 
     def max(self, other: Vec2) -> Vec2:

@@ -9,6 +9,7 @@ BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background1.jpg")
 BACKGROUND_2 = pygame.image.load("./resources/backgrounds/background2.png")
 BACKGROUND_3 = pygame.image.load("./resources/backgrounds/background3.png")
 
+
 # birds
 BIRD_SPRITESHEET = pygame.image.load("./resources/spritesheets/birds.png")
 RED_BIRD = BIRD_SPRITESHEET.subsurface((0, 0, 64, 64))

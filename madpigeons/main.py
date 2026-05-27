@@ -1,12 +1,22 @@
 import pygame
 import pymunk
+from enum import Enum
 from typing import Callable
-from pygame import mouse, key
+from pygame import mouse, key, transform
 
 from game import Game
 from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2, Color
 import objects
 import assets
+
+WINDOW_DIMENSIONS = (1000, 564)
+
+BACKGROUND_IMAGE = transform.smoothscale(assets.BACKGROUND_3, WINDOW_DIMENSIONS)
+
+
+class GameMode(Enum):
+    Edit = "Edit"
+    Play = "Play"
 
 
 class InventoryItem:
@@ -17,8 +27,7 @@ class InventoryItem:
         create: Callable[[objects.Level], objects.CorporealEntity],
     ) -> None:
         self.name = name
-        self.image = image
-
+        self.display_image = image
         self.create_entity = create
 
 
@@ -80,9 +89,7 @@ HOTBARS = {
     ],
 }
 HOTBAR_SLOT_SIZE = 60
-
-MODE_EDIT = "edit"
-MODE_PLAY = "play"
+HOTBAR_SLOT_PADDING = 5
 
 
 def point_in_body(point: tuple[float, float], body: pymunk.Body):
@@ -92,56 +99,43 @@ def point_in_body(point: tuple[float, float], body: pymunk.Body):
 
 
 class TheGame(Game):
-    window_width = 1000
-    window_height = 564
-    title = "Mad Pigeons™ (not angry birds)"
+    window_width = WINDOW_DIMENSIONS[0]
+    window_height = WINDOW_DIMENSIONS[1]
+    title = "Mad Pigeons™"
     icon = assets.RED_BIRD
 
-    mode: str
-    birds: list[objects.bird.Bird]
+    remaining_birds: list[objects.bird.Bird]
 
     mouse_down_start: tuple[int, int] | None = None
 
-    def setup(self):
-        test_level = objects.Level()
+    current_mode: GameMode
+    current_hotbar: str = ""
 
-        self.mode = MODE_EDIT
-        self.birds = [
-            objects.bird.BirdRed(test_level),
-            objects.bird.BirdRed(test_level),
-            objects.bird.BirdRed(test_level),
+    def setup(self):
+        main_level = objects.Level()
+
+        self.current_mode = GameMode.Edit
+        self.remaining_birds = [
+            objects.bird.BirdRed(main_level),
+            objects.bird.BirdRed(main_level),
+            objects.bird.BirdRed(main_level),
         ]
 
         floor_segment = pymunk.Segment(
-            test_level.space.static_body,
-            (-1e4, self.window_height * 0.9 + 70),
-            (1e4, self.window_height * 0.9 + 70),
+            main_level.space.static_body,
+            (-1e4, self.window_height * 0.9 + 130),
+            (1e4, self.window_height * 0.9 + 130),
             90,
         )
         floor_segment.friction = 0.6
         floor_segment.elasticity = 0.4
 
-        test_level.space.add(floor_segment)
+        main_level.space.add(floor_segment)
 
-        self.current_level = test_level
+        self.current_level = main_level
         self.current_dragging_entity: objects.CorporealEntity | None = None
 
-        self.background_image = pygame.transform.smoothscale(
-            assets.BACKGROUND_1,
-            (self.window_width, self.window_height),
-        )
-
-    def set_mode(self, new_mode: str):
-        if new_mode == MODE_PLAY:
-            self.hotbar_container.visible = False
-            self.hotbar_container.invalidate()
-            self.mode_button.set_image(assets.EDIT_BUTTON)
-        elif new_mode == MODE_EDIT:
-            self.hotbar_container.visible = True
-            self.hotbar_container.invalidate()
-            self.mode_button.set_image(assets.PLAY_BUTTON)
-
-        self.mode = new_mode
+        self.setup_ui()
 
     def setup_ui(self):
         screen_ui_container = GuiObject(
@@ -150,79 +144,115 @@ class TheGame(Game):
         self.screen_ui_container = screen_ui_container
 
         def button_down(*_):
-            self.set_mode(MODE_EDIT if self.mode == MODE_PLAY else MODE_PLAY)
+            self.set_mode(
+                GameMode.Play if self.current_mode == GameMode.Edit else GameMode.Edit
+            )
 
         mode_button = ImageLabel(
             screen_ui_container,
-            anchor_point=Vec2(1, 1),
-            position=UDim2(-5, 1, -5, 1),
+            anchor_point=Vec2(1, 0),
+            position=UDim2(-5, 1, 5, 0),
             size=UDim2(75, 0, 75, 0),
             image=assets.PLAY_BUTTON,
         )
         mode_button.mouse_down.connect(button_down)
-
         self.mode_button = mode_button
 
         # setup hotbar
-        hotbar_count = len(HOTBARS["Wood"])
-        hotbar_container = GuiObject(
+        hotbar_container = Frame(  # size will be updated in set_hotbar
             screen_ui_container,
-            size=UDim2(0, 0.6, HOTBAR_SLOT_SIZE, 0),
-            position=UDim2(0, 0.5, -5, 1),
-            anchor_point=Vec2(0.5, 1),
+            anchor_point=Vec2(0.5, 0),
+            position=UDim2(0, 0.5, 5, 0),
+            color=Color(30, 30, 30, 127),
+            border_color=Color(255, 255, 255, 255),
+            # border_thickness=2,
+            roundness=8,
         )
 
         self.hotbar_container = hotbar_container
+        self.set_hotbar("Wood")
 
-        for index, item in enumerate(HOTBARS["Wood"]):
-            frame = Frame(
-                hotbar_container,
-                Vec2(index / (hotbar_count - 1), 0),
-                UDim2(x_scale=index / (hotbar_count - 1)),
-                UDim2(x_offset=HOTBAR_SLOT_SIZE, y_offset=HOTBAR_SLOT_SIZE),
+    def set_mode(self, new_mode: GameMode):
+        if new_mode == GameMode.Play:
+            self.current_dragging_entity = None
+            self.hotbar_container.visible = False
+            self.hotbar_container.invalidate()
+            self.mode_button.set_image(assets.EDIT_BUTTON)
+        elif new_mode == GameMode.Edit:
+            self.hotbar_container.visible = True
+            self.hotbar_container.invalidate()
+            self.mode_button.set_image(assets.PLAY_BUTTON)
+
+        self.current_mode = new_mode
+
+    def set_hotbar(self, new_hotbar: str):
+        if self.current_hotbar == new_hotbar:
+            return
+
+        self.current_hotbar = new_hotbar
+
+        hotbar_items = HOTBARS.get(new_hotbar, [])
+        num_items = len(hotbar_items)
+
+        self.hotbar_container.size = UDim2(
+            x_offset=num_items * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING)
+            - HOTBAR_SLOT_PADDING,
+            y_offset=HOTBAR_SLOT_SIZE,
+        )
+        self.hotbar_container.clear_children()
+
+        for index, item in enumerate(hotbar_items):
+            item_container = GuiObject(
+                self.hotbar_container,
+                position=UDim2(
+                    index * (HOTBAR_SLOT_SIZE + HOTBAR_SLOT_PADDING), 0, 0, 0
+                ),
+                size=UDim2(HOTBAR_SLOT_SIZE, 0, HOTBAR_SLOT_SIZE, 0),
             )
-            frame.color = Color(0, 0, 0, 80)
-            frame.invalidate()
-
+            background_frame = Frame(
+                item_container,
+                anchor_point=Vec2(0.5, 0.5),
+                position=UDim2(0, 0.5, 0, 0.5),
+                size=UDim2(0, 0.9, 0, 0.9),
+                color=Color(20, 20, 30, 80),
+                border_color=Color(0, 0, 0, 127),
+                border_thickness=2,
+                roundness=8,
+            )
             ImageLabel(
-                frame,
-                Vec2(0.5, 0.5),
-                UDim2(x_scale=0.5, y_scale=0.5),
-                UDim2(x_scale=0.9, y_scale=0.9),
-                image=item.image,
+                background_frame,
+                anchor_point=Vec2(0.5, 0.5),
+                position=UDim2(0, 0.5, 0, 0.5),
+                size=UDim2(-8, 1, -8, 1),
+                image=item.display_image,
             )
-
-            name_label = TextLabel(
-                frame,
-                Vec2(0.5, 1),
-                UDim2(x_scale=0.5),
-                size=UDim2(0, 2, 20, 0),
+            hover_name_label = TextLabel(
+                background_frame,
+                anchor_point=Vec2(0.5, 0),
+                position=UDim2(0, 0.5, 10, 1),
+                size=UDim2(0, 2, 16, 0),
                 text=item.name,
-                text_color=Color(0, 0, 0, 255),
-                text_outline_color=Color(255, 255, 255, 10),
-                text_outline_thickness=1,
             )
-            name_label.visible = False
+            hover_name_label.visible = False
 
-            def on_mouse_down(*_, item=item):
+            def mouse_enter(*_, label=hover_name_label):
+                label.visible = True
+                label.invalidate()
+
+            def mouse_leave(*_, label=hover_name_label):
+                label.visible = False
+                label.invalidate()
+
+            def mouse_down(*_, item=item):
                 new_entity = item.create_entity(self.current_level)
-                new_entity.body.position = mouse.get_pos()
                 self.current_dragging_entity = new_entity
 
-            def on_mouse_enter(*_, name_label=name_label):
-                name_label.visible = True
-                name_label.invalidate()
-
-            def on_mouse_leave(*_, name_label=name_label):
-                name_label.visible = False
-                name_label.invalidate()
-
-            frame.mouse_down.connect(on_mouse_down)
-            frame.mouse_enter.connect(on_mouse_enter)
-            frame.mouse_leave.connect(on_mouse_leave)
+            background_frame.mouse_down.connect(mouse_down)
+            background_frame.mouse_enter.connect(mouse_enter)
+            background_frame.mouse_leave.connect(mouse_leave)
 
     def on_update(self, dt: float):
-        if self.mode == MODE_EDIT:
+        if self.current_mode == GameMode.Edit:
             entity = self.current_dragging_entity
 
             if entity is not None:
@@ -238,27 +268,24 @@ class TheGame(Game):
                 body.angular_velocity = 0
                 body.angle += dt * rotate_sign * 3.14
 
-                # apparently this fixes the problem where dragging while paused wouldnt actually update the position of the shape
-                # yay
                 self.current_level.space.reindex_shapes_for_body(body)
-        elif self.mode == MODE_PLAY:
+        elif self.current_mode == GameMode.Play:
             self.current_level.update(dt)
             self.current_level.update_physics(dt)
 
     def on_draw_scene(self, out: pygame.Surface):
-        out.blit(self.background_image)
+        out.blit(BACKGROUND_IMAGE)
 
         # self.current_level.display(out, True)
         self.current_level.display(out)
 
     def on_draw_interface(self, out: pygame.Surface):
-        # NOAH TEST ASSETS HERE
-        # out.blit(assets.BLAST, (100, 100))
-
         self.screen_ui_container.draw_to(out)
+        # self.screen_ui_container.debug_draw_descendants(out)
 
+    # inputs
     def on_mouse_left_down(self, pos: tuple[int, int]):
-        if self.mode == MODE_EDIT:
+        if self.current_mode == GameMode.Edit:
             for entity in self.current_level.entities:
                 if not isinstance(entity, objects.CorporealEntity):
                     continue
@@ -266,21 +293,22 @@ class TheGame(Game):
                 if point_in_body(pos, entity.body):
                     self.current_dragging_entity = entity
                     break
-        elif self.mode == MODE_PLAY:
+        elif self.current_mode == GameMode.Play:
             self.mouse_down_start = pos
 
         self.screen_ui_container._propogate_on_mouse_down(*pos)
 
     def on_mouse_left_up(self, pos: tuple[int, int]):
-        if self.mode == MODE_EDIT:
+        if self.current_mode == GameMode.Edit:
             if self.current_dragging_entity is not None:
                 self.current_dragging_entity = None
-        elif self.mode == MODE_PLAY:
-            if self.mouse_down_start is not None and len(self.birds) > 0:
+        elif self.current_mode == GameMode.Play:
+            # TODO: make this better
+            if self.mouse_down_start is not None and len(self.remaining_birds) > 0:
                 delta_x = pos[0] - self.mouse_down_start[0]
                 delta_y = pos[1] - self.mouse_down_start[1]
 
-                new_bird = self.birds.pop()
+                new_bird = self.remaining_birds.pop()
                 new_bird.body.position = (20, 400)
                 new_bird.body.velocity = (delta_x, delta_y)
 
@@ -290,6 +318,16 @@ class TheGame(Game):
 
     def on_mouse_move(self, pos: tuple[int, int]):
         self.screen_ui_container._propogate_on_mouse_move(*pos)
+
+    def on_key_down(self, key: str):
+        if key == "1":
+            self.set_hotbar("Wood")
+        elif key == "2":
+            self.set_hotbar("Stone")
+        elif key == "3":
+            self.set_hotbar("Glass")
+        elif key == "4":
+            self.set_hotbar("Pigs")
 
 
 game = TheGame()

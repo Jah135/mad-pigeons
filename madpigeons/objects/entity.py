@@ -5,11 +5,12 @@ import pymunk
 
 from pygame import transform
 from math import degrees
-
 from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
     from .level import Level
+
+from .constants import get_collision_force
 
 
 class Entity:
@@ -47,6 +48,13 @@ class Entity:
         """
         ...
 
+    def display_debug(self, screen: pygame.Surface) -> None:
+        """
+        An abstract method for use in subclasses.
+
+        This method is called every frame while debugging, to render this Entity to the screen.
+        """
+
     def remove(self) -> None:
         """Removes this Entity from the level it was instantiated in."""
         self.level.remove_entity(self)
@@ -79,7 +87,9 @@ class CorporealEntity(Entity):
         """
         ...
 
-    def on_collide_begin(self, arbiter: pymunk.Arbiter) -> None:
+    def on_collide_begin(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
         """
         An abstract method for use in subclasses.
 
@@ -87,7 +97,9 @@ class CorporealEntity(Entity):
         """
         ...
 
-    def on_collide_pre_solve(self, arbiter: pymunk.Arbiter) -> None:
+    def on_collide_pre_solve(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
         """
         An abstract method for use in subclasses.
 
@@ -95,7 +107,9 @@ class CorporealEntity(Entity):
         """
         ...
 
-    def on_collide_post_solve(self, arbiter: pymunk.Arbiter) -> None:
+    def on_collide_post_solve(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
         """
         An abstract method for use in subclasses.
 
@@ -103,7 +117,9 @@ class CorporealEntity(Entity):
         """
         ...
 
-    def on_collide_separate(self, arbiter: pymunk.Arbiter) -> None:
+    def on_collide_separate(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
         """
         An abstract method for use in subclasses.
 
@@ -144,10 +160,10 @@ class FragileEntity(CorporealEntity):
         self.health = self.max_health
         self._update_image()
 
-    def on_collide_post_solve(self, arbiter: pymunk.Arbiter) -> None:
-        shape_a, shape_b = arbiter.shapes
-        total_mass = shape_a.mass + shape_b.mass
-        impulse = arbiter.total_impulse.length / total_mass
+    def on_collide_post_solve(
+        self, arbiter: pymunk.Arbiter, other: CorporealEntity | None
+    ) -> None:
+        impulse = get_collision_force(arbiter)
 
         if impulse > 200:
             self.inflict_damage((impulse - 200) / 200)
@@ -172,8 +188,6 @@ class FragileEntity(CorporealEntity):
         weighted_damage = damage * (1.1**-self.damage_resistance)
 
         self.health -= weighted_damage
-
-        # print(damage, weighted_damage, self.health)
 
         if self.health <= 0:
             self.on_death()

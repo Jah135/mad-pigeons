@@ -40,28 +40,28 @@ class Level:
         entity_a, entity_b = self.get_entities_from_bodies(*arbiter.bodies)
 
         if entity_a is not None:
-            entity_a.on_collide_begin(arbiter)
+            entity_a.on_collide_begin(arbiter, entity_b)
 
         if entity_b is not None:
-            entity_b.on_collide_begin(arbiter)
+            entity_b.on_collide_begin(arbiter, entity_a)
 
     def _on_collision_pre_solve(self, arbiter: pymunk.Arbiter, *_):
         entity_a, entity_b = self.get_entities_from_bodies(*arbiter.bodies)
 
         if entity_a is not None:
-            entity_a.on_collide_pre_solve(arbiter)
+            entity_a.on_collide_pre_solve(arbiter, entity_b)
 
         if entity_b is not None:
-            entity_b.on_collide_pre_solve(arbiter)
+            entity_b.on_collide_pre_solve(arbiter, entity_a)
 
     def _on_collision_post_solve(self, arbiter: pymunk.Arbiter, *_):
         entity_a, entity_b = self.get_entities_from_bodies(*arbiter.bodies)
 
         if entity_a is not None:
-            entity_a.on_collide_post_solve(arbiter)
+            entity_a.on_collide_post_solve(arbiter, entity_b)
 
         if entity_b is not None:
-            entity_b.on_collide_post_solve(arbiter)
+            entity_b.on_collide_post_solve(arbiter, entity_a)
 
     def _on_collision_separate(self, arbiter: pymunk.Arbiter, *_):
         if arbiter.is_removal:
@@ -70,10 +70,10 @@ class Level:
         entity_a, entity_b = self.get_entities_from_bodies(*arbiter.bodies)
 
         if entity_a is not None:
-            entity_a.on_collide_separate(arbiter)
+            entity_a.on_collide_separate(arbiter, entity_b)
 
         if entity_b is not None:
-            entity_b.on_collide_separate(arbiter)
+            entity_b.on_collide_separate(arbiter, entity_a)
 
     # external updating
 
