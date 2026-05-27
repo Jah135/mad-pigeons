@@ -4,6 +4,9 @@ import pathlib
 
 os.chdir(pathlib.Path(__file__).parent.resolve())
 
+# fonts
+LDF_COMIC_SANS_16PT = pygame.Font("./resources/fonts/ldfcomicsans.ttf", 12)
+
 # backgrounds
 BACKGROUND_1 = pygame.image.load("./resources/backgrounds/background1.jpg")
 BACKGROUND_2 = pygame.image.load("./resources/backgrounds/background2.png")
@@ -174,16 +177,16 @@ WOOD_WEDGE_2 = WOOD_SPRITESHEET.subsurface((1, 336, 79, 80))
 WOOD_WEDGE_3 = WOOD_SPRITESHEET.subsurface((85, 248, 79, 80))
 
 # Large Wood Ball
-LARGE_WOOD_BALL_0 = WOOD_SPRITESHEET.subsurface((85, 331, 75, 74))
-LARGE_WOOD_BALL_1 = WOOD_SPRITESHEET.subsurface((167, 85, 75, 74))
-LARGE_WOOD_BALL_2 = WOOD_SPRITESHEET.subsurface((244, 85, 75, 74))
-LARGE_WOOD_BALL_3 = WOOD_SPRITESHEET.subsurface((321, 86, 75, 74))
+LARGE_WOOD_BALL_0 = WOOD_SPRITESHEET.subsurface((85, 331, 75, 75))
+LARGE_WOOD_BALL_1 = WOOD_SPRITESHEET.subsurface((167, 85, 75, 75))
+LARGE_WOOD_BALL_2 = WOOD_SPRITESHEET.subsurface((244, 85, 75, 75))
+LARGE_WOOD_BALL_3 = WOOD_SPRITESHEET.subsurface((321, 86, 75, 75))
 
 # Small Wood Ball
-SMALL_WOOD_BALL_0 = WOOD_SPRITESHEET.subsurface((421, 43, 39, 40))
-SMALL_WOOD_BALL_1 = WOOD_SPRITESHEET.subsurface((167, 333, 39, 40))
-SMALL_WOOD_BALL_2 = WOOD_SPRITESHEET.subsurface((209, 334, 39, 40))
-SMALL_WOOD_BALL_3 = WOOD_SPRITESHEET.subsurface((252, 161, 39, 40))
+SMALL_WOOD_BALL_0 = WOOD_SPRITESHEET.subsurface((421, 43, 40, 40))
+SMALL_WOOD_BALL_1 = WOOD_SPRITESHEET.subsurface((167, 333, 40, 40))
+SMALL_WOOD_BALL_2 = WOOD_SPRITESHEET.subsurface((209, 334, 40, 40))
+SMALL_WOOD_BALL_3 = WOOD_SPRITESHEET.subsurface((252, 161, 40, 40))
 
 # Wood Slab
 WOOD_SLAB_0 = WOOD_SPRITESHEET.subsurface((167, 162, 83, 41))
@@ -298,3 +301,4 @@ BUTTON_SPRITESHEET = pygame.image.load("./resources/spritesheets/buttons.png")
 
 PLAY_BUTTON = BUTTON_SPRITESHEET.subsurface((672, 1030, 104, 104))
 EDIT_BUTTON = BUTTON_SPRITESHEET.subsurface((1691, 609, 104, 104))
+TRASH_BUTTON = BAD_PIGGIES_SPRITESHEET.subsurface((1063, 1483, 116, 116))

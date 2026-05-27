@@ -5,7 +5,16 @@ from typing import Callable
 from pygame import mouse, key, transform
 
 from game import Game
-from ui import GuiObject, TextLabel, Frame, ImageLabel, UDim2, Vec2, Color
+from ui import (
+    GuiObject,
+    TextLabel,
+    Frame,
+    ImageLabel,
+    UDim2,
+    Vec2,
+    Color,
+    VerticalAlignment,
+)
 import objects
 import assets
 
@@ -85,11 +94,12 @@ HOTBARS = {
             "Small Glass Ball", assets.SMALL_GLASS_BALL_0, objects.glass.SmallBall
         ),
     ],
-    "Pigs": [
+    "Other": [
         InventoryItem("Regular Pig", assets.MEDIUM_PIG, objects.pig.MinionPig),
         InventoryItem("Foreman Pig", assets.FOREMAN_PIG, objects.pig.ForemanPig),
         InventoryItem("Corporal Pig", assets.CORPORAL_PIG, objects.pig.CorporalPig),
         InventoryItem("King Pig", assets.KING_PIG, objects.pig.KingPig),
+        InventoryItem("TNT", assets.TNT, objects.special.TNT),
     ],
 }
 HOTBAR_SLOT_SIZE = 60
@@ -127,14 +137,23 @@ class TheGame(Game):
             ]
 
             self.current_dragging_entity = None
+
+            self.clear_button.visible = False
+            self.clear_button.invalidate()
+
             self.hotbar_container.visible = False
             self.hotbar_container.invalidate()
+
             self.mode_button.set_image(assets.EDIT_BUTTON)
         elif new_mode == GameMode.Edit:
             self.current_level.load_snapshot(self.edit_snapshot)
 
+            self.clear_button.visible = True
+            self.clear_button.invalidate()
+
             self.hotbar_container.visible = True
             self.hotbar_container.invalidate()
+
             self.mode_button.set_image(assets.PLAY_BUTTON)
 
         self.current_mode = new_mode
@@ -186,6 +205,11 @@ class TheGame(Game):
                 position=UDim2(0, 0.5, 10, 1),
                 size=UDim2(0, 2, 16, 0),
                 text=item.name,
+                text_color=Color(255, 255, 255, 255),
+                text_y_alignment=VerticalAlignment.Top,
+                text_font=assets.LDF_COMIC_SANS_16PT,
+                text_outline_color=Color(0, 0, 0, 255),
+                text_outline_thickness=1,
             )
             hover_name_label.visible = False
 
@@ -232,7 +256,7 @@ class TheGame(Game):
         )
         self.screen_ui_container = screen_ui_container
 
-        def button_down(*_):
+        def mode_button_down(*_):
             self.set_mode(
                 GameMode.Play if self.current_mode == GameMode.Edit else GameMode.Edit
             )
@@ -244,8 +268,20 @@ class TheGame(Game):
             size=UDim2(75, 0, 75, 0),
             image=assets.PLAY_BUTTON,
         )
-        mode_button.mouse_down.connect(button_down)
+        mode_button.mouse_down.connect(mode_button_down)
         self.mode_button = mode_button
+
+        def clear_button_down(*_):
+            self.current_level.clear()
+
+        clear_button = ImageLabel(
+            screen_ui_container,
+            size=UDim2(70, 0, 70, 0),
+            position=UDim2(5, 0, 5, 0),
+            image=assets.TRASH_BUTTON,
+        )
+        clear_button.mouse_down.connect(clear_button_down)
+        self.clear_button = clear_button
 
         # setup hotbar
         hotbar_container = Frame(  # size will be updated in set_hotbar
@@ -288,6 +324,8 @@ class TheGame(Game):
         self.current_level.display(out)
 
     def on_draw_interface(self, out: pygame.Surface):
+        # out.blit(assets.SMALL_WOOD_BALL_0)
+
         self.screen_ui_container.draw_to(out)
         # self.screen_ui_container.debug_draw_descendants(out)
 
@@ -335,7 +373,7 @@ class TheGame(Game):
         elif key == "3":
             self.set_hotbar("Glass")
         elif key == "4":
-            self.set_hotbar("Pigs")
+            self.set_hotbar("Other")
 
 
 game = TheGame()

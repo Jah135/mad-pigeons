@@ -6,6 +6,10 @@ from ..color import Color
 from ..vec2 import Vec2
 from ..udim2 import UDim2
 
+font.init()
+
+DEFAULT_FONT = font.Font(None, 16)
+
 
 class TextLabel(GuiObject):
     """A label for displaying text maybe"""
@@ -13,7 +17,7 @@ class TextLabel(GuiObject):
     text: str
     text_size: int
     text_color: Color
-    text_font: str | None
+    text_font: font.Font
 
     text_x_alignment: enums.HorizontalAlignment
     text_y_alignment: enums.VerticalAlignment
@@ -28,28 +32,25 @@ class TextLabel(GuiObject):
         position: UDim2 = UDim2(),
         size: UDim2 = UDim2(),
         text: str = "Label",
-        text_size: int = 16,
         text_color: Color = Color(0, 0, 0, 255),
-        text_font: str | None = None,
+        text_font: font.Font = DEFAULT_FONT,
         text_x_alignment: enums.HorizontalAlignment = enums.HorizontalAlignment.Center,
         text_y_alignment: enums.VerticalAlignment = enums.VerticalAlignment.Center,
         text_outline_color: Color = Color(0, 0, 0, 0),
         text_outline_thickness: int = 1,
     ) -> None:
         self.text = text
-        self.text_size = text_size
         self.text_color = text_color
         self.text_x_alignment = text_x_alignment
         self.text_y_alignment = text_y_alignment
         self.text_outline_color = text_outline_color
         self.text_outline_thickness = text_outline_thickness
-
-        self._font = font.Font(text_font, self.text_size)
+        self.font = text_font
 
         super().__init__(parent, anchor_point, position, size)
 
     def render(self, render_texture: Surface):
-        text_surface = self._font.render(self.text, True, self.text_color.rgb)
+        text_surface = self.font.render(self.text, True, self.text_color.rgb)
 
         total_width, total_height = self.absolute_size.xy
 
@@ -71,7 +72,7 @@ class TextLabel(GuiObject):
         if self.text_outline_color.a != 0 and self.text_outline_thickness > 0:
             thickness = self.text_outline_thickness
 
-            outline_surface = self._font.render(
+            outline_surface = self.font.render(
                 self.text, True, self.text_outline_color.rgb
             )
 

@@ -49,7 +49,7 @@ class Level:
         for snapshot in entity_snapshots:
             snapshot.recreate(self)
 
-        self.space.step(1)
+        self.space.step(0.0001)
 
     # collision handlers
     def _on_collision_begin(self, arbiter: pymunk.Arbiter, *_):
@@ -97,8 +97,8 @@ class Level:
         for entity in self.entities:
             entity.update_physics(dt)
 
-        for _ in range(10):
-            self.space.step(dt / 10)
+        for _ in range(5):
+            self.space.step(dt / 5)
 
     def update(self, dt: float):
         """Performs an update step."""

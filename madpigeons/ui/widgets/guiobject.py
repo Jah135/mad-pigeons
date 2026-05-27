@@ -87,6 +87,9 @@ class GuiObject:
         size = self.absolute_size
 
         for child in self.children:
+            if not child.visible:
+                continue
+
             child_bounds = child.content_bounds
             child_topleft = Vec2(*child_bounds.topleft)
             child_dimensions = Vec2(*child_bounds.size)
@@ -164,9 +167,10 @@ class GuiObject:
         out.blit(self.modern_texture, self.content_bounds)
 
     def debug_draw_descendants(self, out: Surface):
-        draw.rect(out, "blue", self.bounds, 2)
-        draw.rect(out, "yellow" if self.is_visible else "gray", self.content_bounds, 2)
-        draw.circle(out, "blue", self.absolute_position.xy, 4)
+        draw.rect(out, "red", self.bounds, 1)
+        draw.circle(out, "red", self.absolute_position.xy, 2)
+        draw.rect(out, "yellow" if self.is_visible else "black", self.content_bounds, 1)
+        draw.circle(out, "yellow", self.content_bounds.topleft, 2)
 
         for child in self.children:
             child.debug_draw_descendants(out)

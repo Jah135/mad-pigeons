@@ -93,4 +93,4 @@ class TNT(FragileEntity):
         return body
 
     def on_death(self) -> None:
-        Explosion(self.level, self.body.position.int_tuple, 200, 500000)
+        Explosion(self.level, self.body.position.int_tuple, 100, 500000)
