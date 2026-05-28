@@ -11,6 +11,6 @@ Definitely not an Angry Birds clone.
 ## 03 Camp Installation Guide
 1. Open `Command Prompt`
 2. Copy and paste this command into the terminal and press Enter:
-`git clone https://github.com/Jah135/mad-pigeons.git -q && cd ./mad-pigeons && ./install_packages.bat`
+`winget install --id Git.Git -e --source winget && git clone https://github.com/Jah135/mad-pigeons.git -q && cd ./mad-pigeons && install_packages.bat`
 3. Then copy and paste this into the terminal to start it after running the previous command:
 `python ./madpigeons/main.py`
