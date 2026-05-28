@@ -27,13 +27,19 @@ EXPLOSION_FRAMES = (
 class Explosion(Entity):
     position: tuple[int, int]
 
-    current_frame: int
-    animate_timer: float
+    current_frame: int = 0
+    animate_timer: float = 0
 
     def __init__(
         self, level: Level, position: tuple[int, int], radius: float, pressure: float
     ) -> None:
         super().__init__(level)
+
+        self.position = position
+        self.radius = radius
+
+        self.current_frame = 0
+        self.animate_timer = 0
 
         bodies_in_radius = [
             info.shape.body
@@ -49,12 +55,6 @@ class Explosion(Entity):
 
             if entity is not None and isinstance(entity, FragileEntity):
                 entity.inflict_damage((1 - delta.length / radius) * 10)
-
-        self.position = position
-        self.radius = radius
-
-        self.current_frame = 0
-        self.animate_timer = 0
 
     def update(self, dt: float) -> None:
         self.animate_timer += dt
@@ -93,4 +93,4 @@ class TNT(FragileEntity):
         return body
 
     def on_death(self) -> None:
-        Explosion(self.level, self.body.position.int_tuple, 100, 500000)
+        Explosion(self.level, self.body.position.int_tuple, 150, 500000)

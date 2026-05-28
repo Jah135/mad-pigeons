@@ -1,9 +1,12 @@
 import pymunk
+from typing import TYPE_CHECKING
 
-from .level import Level
 from .constants import get_collision_force
 from .entity import CorporealEntity, FragileEntity
 import assets
+
+if TYPE_CHECKING:
+    from .level import Level
 
 BIRD_RADIUS = 15
 
@@ -17,6 +20,7 @@ class Bird(CorporealEntity):
         shape.collision_type = 1
         shape.density = 1
         shape.friction = 0.4
+        shape.elasticity = 0.4
 
         return body
 

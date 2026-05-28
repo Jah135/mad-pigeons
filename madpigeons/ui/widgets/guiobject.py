@@ -18,6 +18,7 @@ class GuiObject:
     position: UDim2
     size: UDim2
     visible: bool
+    clips_descendants: bool = False
 
     is_stale: bool
     texture: Surface
@@ -82,6 +83,8 @@ class GuiObject:
     @property
     def content_bounds(self) -> Rect:
         """The bounds of this GuiObject, including all of it's descendants, relative to it's oldest ancestor."""
+        if self.clips_descendants:
+            return self.bounds
 
         top_left = self.absolute_position
         size = self.absolute_size

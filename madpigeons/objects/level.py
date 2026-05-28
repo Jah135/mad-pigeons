@@ -3,7 +3,8 @@ import pygame
 
 from pymunk.pygame_util import DrawOptions
 
-from .entity import EntitySnapshot, Entity, CorporealEntity
+from .entity import Entity, CorporealEntity
+from .serde import EntitySnapshot
 
 
 class Level:

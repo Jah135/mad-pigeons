@@ -5,26 +5,12 @@ import pymunk
 
 from pygame import transform
 from math import degrees
-from typing import TYPE_CHECKING, Sequence, Type, Self, Any
-
-if TYPE_CHECKING:
-    from .level import Level
+from typing import TYPE_CHECKING, Sequence, Self
 
 from .constants import get_collision_force
 
-
-class EntitySnapshot:
-    data: dict[str, Any]
-    creator: Type[Entity]
-
-    def __init__(self, entity: Entity) -> None:
-        self.data = dict()
-        self.creator = entity.__class__
-
-        entity.write_snapshot(self.data)
-
-    def recreate(self, level: Level) -> Entity:
-        return self.creator.from_snapshot(level, self.data)
+if TYPE_CHECKING:
+    from .level import Level
 
 
 class Entity:
@@ -120,8 +106,8 @@ class CorporealEntity(Entity):
     @classmethod
     def from_snapshot(cls, level: Level, data: dict) -> Self:
         self = cls(level)
-        self.body.position = data.get("position", (0, 0))
         self.body.angle = data.get("angle", 0)
+        self.body.position = data.get("position", (0, 0))
 
         return self
 
@@ -222,7 +208,10 @@ class FragileEntity(CorporealEntity):
         ...
 
     def _update_image(self):
-        index = round(self.health / self.max_health * (len(self.damage_textures) - 1))
+        index = int(self.health / self.max_health * (len(self.damage_textures) - 1))
+
+        if index < 0 or index >= len(self.damage_textures):
+            return
 
         self.set_texture(self.damage_textures[index])
 

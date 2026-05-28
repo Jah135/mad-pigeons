@@ -2,7 +2,8 @@ import pygame
 import pymunk
 from enum import Enum
 from typing import Callable
-from pygame import mouse, key, transform
+from pygame import mouse, transform, draw
+from math import radians
 
 from game import Game
 from ui import (
@@ -18,9 +19,21 @@ from ui import (
 import objects
 import assets
 
-WINDOW_DIMENSIONS = (1000, 564)
+WINDOW_SCALE = 1
+WINDOW_WIDTH = int(1000 * WINDOW_SCALE)
+WINDOW_HEIGHT = int(564 * WINDOW_SCALE)
 
-BACKGROUND_IMAGE = transform.smoothscale(assets.BACKGROUND_3, WINDOW_DIMENSIONS)
+SLINGSHOT_SCALE = 0.7
+
+BACKGROUND_IMAGE = transform.smoothscale(
+    assets.BACKGROUND_3, (WINDOW_WIDTH, WINDOW_HEIGHT)
+)
+SLINGSHOT_BACK_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_BACK, SLINGSHOT_SCALE)
+SLINGSHOT_FRONT_IMAGE = transform.smoothscale_by(
+    assets.SLINGSHOT_FRONT, SLINGSHOT_SCALE
+)
+SLINGSHOT_HEIGHT = SLINGSHOT_BACK_IMAGE.height
+SLINGSHOT_POS = (200, WINDOW_HEIGHT - SLINGSHOT_HEIGHT - 10)
 
 
 class GameMode(Enum):
@@ -113,18 +126,17 @@ def point_in_body(point: tuple[float, float], body: pymunk.Body):
 
 
 class TheGame(Game):
-    window_width = WINDOW_DIMENSIONS[0]
-    window_height = WINDOW_DIMENSIONS[1]
+    window_width = WINDOW_WIDTH
+    window_height = WINDOW_HEIGHT
     title = "Mad Pigeons™"
     icon = assets.RED_BIRD
 
     remaining_birds: list[objects.bird.Bird]
 
-    mouse_down_start: tuple[int, int] | None = None
-
-    edit_snapshot: list[objects.EntitySnapshot]
-    current_mode: GameMode
+    edit_snapshot: list[objects.EntitySnapshot] | None = None
+    current_mode: GameMode = GameMode.Edit
     current_hotbar: str = ""
+    slingshot_engaged: bool = False
 
     def set_mode(self, new_mode: GameMode):
         if new_mode == GameMode.Play:
@@ -138,21 +150,16 @@ class TheGame(Game):
 
             self.current_dragging_entity = None
 
-            self.clear_button.visible = False
-            self.clear_button.invalidate()
-
-            self.hotbar_container.visible = False
-            self.hotbar_container.invalidate()
+            self.edit_gui.visible = False
+            self.edit_gui.invalidate()
 
             self.mode_button.set_image(assets.EDIT_BUTTON)
         elif new_mode == GameMode.Edit:
-            self.current_level.load_snapshot(self.edit_snapshot)
+            if self.edit_snapshot is not None:
+                self.current_level.load_snapshot(self.edit_snapshot)
 
-            self.clear_button.visible = True
-            self.clear_button.invalidate()
-
-            self.hotbar_container.visible = True
-            self.hotbar_container.invalidate()
+            self.edit_gui.visible = True
+            self.edit_gui.invalidate()
 
             self.mode_button.set_image(assets.PLAY_BUTTON)
 
@@ -236,8 +243,8 @@ class TheGame(Game):
 
         floor_segment = pymunk.Segment(
             main_level.space.static_body,
-            (-1e4, self.window_height * 0.9 + 130),
-            (1e4, self.window_height * 0.9 + 130),
+            (-1e4, WINDOW_HEIGHT + 85),
+            (1e4, WINDOW_HEIGHT + 85),
             90,
         )
         floor_segment.friction = 0.6
@@ -252,7 +259,7 @@ class TheGame(Game):
 
     def setup_ui(self):
         screen_ui_container = GuiObject(
-            size=UDim2(x_offset=self.window_width, y_offset=self.window_height)
+            size=UDim2(x_offset=WINDOW_WIDTH, y_offset=WINDOW_HEIGHT)
         )
         self.screen_ui_container = screen_ui_container
 
@@ -274,18 +281,22 @@ class TheGame(Game):
         def clear_button_down(*_):
             self.current_level.clear()
 
+        # edit mode gui
+
+        edit_gui_container = GuiObject(screen_ui_container, size=UDim2(0, 1, 0, 1))
+        self.edit_gui = edit_gui_container
+
         clear_button = ImageLabel(
-            screen_ui_container,
+            edit_gui_container,
             size=UDim2(70, 0, 70, 0),
             position=UDim2(5, 0, 5, 0),
             image=assets.TRASH_BUTTON,
         )
         clear_button.mouse_down.connect(clear_button_down)
-        self.clear_button = clear_button
 
         # setup hotbar
         hotbar_container = Frame(  # size will be updated in set_hotbar
-            screen_ui_container,
+            edit_gui_container,
             anchor_point=Vec2(0.5, 0),
             position=UDim2(0, 0.5, 5, 0),
             color=Color(20, 20, 30, 127),
@@ -300,34 +311,38 @@ class TheGame(Game):
             entity = self.current_dragging_entity
 
             if entity is not None:
-                keys = key.get_pressed()
-
-                rotate_sign = (-1 if keys[pygame.K_q] else 0) + (
-                    1 if keys[pygame.K_e] else 0
-                )
-
                 body = entity.body
                 body.position = mouse.get_pos()
                 body.velocity = (0, 0)
                 body.angular_velocity = 0
-                body.angle += dt * rotate_sign * 3.14
 
                 self.current_level.space.reindex_shapes_for_body(body)
         elif self.current_mode == GameMode.Play:
+            if not self.slingshot_engaged:
+                pass
+
             self.current_level.update(dt)
             self.current_level.update_physics(dt)
 
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(BACKGROUND_IMAGE)
 
-        # self.current_level.display(out, True)
+        out.blit(SLINGSHOT_BACK_IMAGE, SLINGSHOT_POS)
+
+        # draw entities
+        self.current_level.display(out, True)
         self.current_level.display(out)
+
+        out.blit(
+            SLINGSHOT_FRONT_IMAGE,
+            (SLINGSHOT_POS[0] - SLINGSHOT_FRONT_IMAGE.width * 0.7, SLINGSHOT_POS[1]),
+        )
 
     def on_draw_interface(self, out: pygame.Surface):
         # out.blit(assets.SMALL_WOOD_BALL_0)
 
         self.screen_ui_container.draw_to(out)
-        # self.screen_ui_container.debug_draw_descendants(out)
+        self.screen_ui_container.debug_draw_descendants(out)
 
     # inputs
     def on_mouse_left_down(self, pos: tuple[int, int]):
@@ -340,7 +355,7 @@ class TheGame(Game):
                     self.current_dragging_entity = entity
                     break
         elif self.current_mode == GameMode.Play:
-            self.mouse_down_start = pos
+            self.mouse_down_start_position = pos
 
         self.screen_ui_container._propogate_on_mouse_down(*pos)
 
@@ -349,16 +364,8 @@ class TheGame(Game):
             if self.current_dragging_entity is not None:
                 self.current_dragging_entity = None
         elif self.current_mode == GameMode.Play:
-            # TODO: make this better
-            if self.mouse_down_start is not None and len(self.remaining_birds) > 0:
-                delta_x = pos[0] - self.mouse_down_start[0]
-                delta_y = pos[1] - self.mouse_down_start[1]
-
-                new_bird = self.remaining_birds.pop()
-                new_bird.body.position = (20, 400)
-                new_bird.body.velocity = (delta_x, delta_y)
-
-                self.current_level.add_entity(new_bird)
+            # TODO: check if the mouse "activated" the slingshot and if so then launch the bird in the direction from the mouse to the slingshot
+            pass
 
         self.screen_ui_container._propogate_on_mouse_up(*pos)
 
@@ -374,6 +381,18 @@ class TheGame(Game):
             self.set_hotbar("Glass")
         elif key == "4":
             self.set_hotbar("Other")
+
+        entity = self.current_dragging_entity
+        if entity is not None:
+            if key == "e":
+                entity.body.angle += radians(45)
+            elif key == "q":
+                entity.body.angle -= radians(45)
+
+        # if key == "n" and self.edit_snapshot is not None:
+        #     objects.save_snapshots_to_file(self.edit_snapshot, "hi.json")
+        # elif key == "l":
+        #     objects.load_entities_from_file("hi.json", self.current_level)
 
 
 game = TheGame()
