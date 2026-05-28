@@ -9,8 +9,6 @@ Definitely not an Angry Birds clone.
 - pygame (community edition) - `pip install pygame-ce`
 
 ## 03 Camp Installation Guide
-TODO: streamline this down into just one command, maybe something with curl?
-
 1. Open `Command Prompt`
 2. Copy and paste this command into the terminal and press Enter:
 `git clone https://github.com/Jah135/mad-pigeons.git -q && cd ./mad-pigeons && ./install_packages.bat`
