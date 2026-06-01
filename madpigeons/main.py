@@ -1,9 +1,9 @@
+import math
 import pygame
 import pymunk
 from enum import Enum
 from typing import Callable
 from pygame import mouse, transform, draw
-from math import radians
 
 from game import Game
 from ui import (
@@ -23,17 +23,14 @@ WINDOW_SCALE = 1
 WINDOW_WIDTH = int(1000 * WINDOW_SCALE)
 WINDOW_HEIGHT = int(564 * WINDOW_SCALE)
 
-SLINGSHOT_SCALE = 0.7
-
 BACKGROUND_IMAGE = transform.smoothscale(
     assets.BACKGROUND_3, (WINDOW_WIDTH, WINDOW_HEIGHT)
 )
-SLINGSHOT_BACK_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_BACK, SLINGSHOT_SCALE)
-SLINGSHOT_FRONT_IMAGE = transform.smoothscale_by(
-    assets.SLINGSHOT_FRONT, SLINGSHOT_SCALE
-)
-SLINGSHOT_HEIGHT = SLINGSHOT_BACK_IMAGE.height
-SLINGSHOT_POS = (200, WINDOW_HEIGHT - SLINGSHOT_HEIGHT - 10)
+SLINGSHOT_BACK_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_BACK, 0.7)
+SLINGSHOT_FRONT_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_FRONT, 0.7)
+SLINGSHOT_POS = (160, WINDOW_HEIGHT - SLINGSHOT_BACK_IMAGE.height - 10)
+SLINGSHOT_AIM_POS = (SLINGSHOT_POS[0] + 5, SLINGSHOT_POS[1] + 20)
+SLINGSHOT_ROPE_LENGTH = 90
 
 
 class GameMode(Enum):
@@ -131,7 +128,7 @@ class TheGame(Game):
     title = "Mad Pigeons™"
     icon = assets.RED_BIRD
 
-    remaining_birds: list[objects.bird.Bird]
+    remaining_birds: list[str]
 
     edit_snapshot: list[objects.EntitySnapshot] | None = None
     current_mode: GameMode = GameMode.Edit
@@ -142,13 +139,10 @@ class TheGame(Game):
         if new_mode == GameMode.Play:
             self.edit_snapshot = self.current_level.take_snapshot()
 
-            self.remaining_birds = [
-                objects.bird.BirdRed(self.current_level),
-                objects.bird.BirdRed(self.current_level),
-                objects.bird.BirdRed(self.current_level),
-            ]
+            self.remaining_birds = ["red", "red", "red"]
 
             self.current_dragging_entity = None
+            self.slingshot_engaged = False
 
             self.edit_gui.visible = False
             self.edit_gui.invalidate()
@@ -157,6 +151,8 @@ class TheGame(Game):
         elif new_mode == GameMode.Edit:
             if self.edit_snapshot is not None:
                 self.current_level.load_snapshot(self.edit_snapshot)
+
+            self.slingshot_engaged = False
 
             self.edit_gui.visible = True
             self.edit_gui.invalidate()
@@ -236,6 +232,19 @@ class TheGame(Game):
             background_frame.mouse_enter.connect(mouse_enter)
             background_frame.mouse_leave.connect(mouse_leave)
 
+    def launch_bird(self, bird_type: str, velocity: Vec2):
+        new_bird = None
+
+        match bird_type:
+            case "red":
+                new_bird = objects.bird.BirdRed(self.current_level)
+
+        if new_bird is None:
+            return
+
+        new_bird.body.position = SLINGSHOT_AIM_POS
+        new_bird.body.velocity = velocity.xy
+
     def setup(self):
         main_level = objects.Level()
 
@@ -282,7 +291,6 @@ class TheGame(Game):
             self.current_level.clear()
 
         # edit mode gui
-
         edit_gui_container = GuiObject(screen_ui_container, size=UDim2(0, 1, 0, 1))
         self.edit_gui = edit_gui_container
 
@@ -327,22 +335,40 @@ class TheGame(Game):
     def on_draw_scene(self, out: pygame.Surface):
         out.blit(BACKGROUND_IMAGE)
 
+        # slingshot back
         out.blit(SLINGSHOT_BACK_IMAGE, SLINGSHOT_POS)
 
         # draw entities
-        self.current_level.display(out, True)
         self.current_level.display(out)
 
+        # slingshot rope
+        if self.slingshot_engaged:
+            mouse_pos = Vec2(*mouse.get_pos())
+            constrained = (SLINGSHOT_AIM_POS - mouse_pos).constrain_length(
+                SLINGSHOT_ROPE_LENGTH
+            )
+
+            bird_pos = SLINGSHOT_AIM_POS + constrained
+
+            draw.line(
+                out, "black", (SLINGSHOT_AIM_POS + Vec2(8, -1)).xy, bird_pos.xy, 4
+            )
+            draw.line(
+                out, "black", (SLINGSHOT_AIM_POS + Vec2(-10, 2)).xy, bird_pos.xy, 4
+            )
+
+        # slingshot front
         out.blit(
             SLINGSHOT_FRONT_IMAGE,
             (SLINGSHOT_POS[0] - SLINGSHOT_FRONT_IMAGE.width * 0.7, SLINGSHOT_POS[1]),
         )
 
+        draw.circle(out, "blue", SLINGSHOT_AIM_POS, 4)
+
     def on_draw_interface(self, out: pygame.Surface):
         # out.blit(assets.SMALL_WOOD_BALL_0)
 
         self.screen_ui_container.draw_to(out)
-        self.screen_ui_container.debug_draw_descendants(out)
 
     # inputs
     def on_mouse_left_down(self, pos: tuple[int, int]):
@@ -365,11 +391,30 @@ class TheGame(Game):
                 self.current_dragging_entity = None
         elif self.current_mode == GameMode.Play:
             # TODO: check if the mouse "activated" the slingshot and if so then launch the bird in the direction from the mouse to the slingshot
-            pass
+            if self.slingshot_engaged:
+
+                self.slingshot_engaged = False
+
+                if len(self.remaining_birds) > 0:
+                    delta = (Vec2(*pos) - SLINGSHOT_AIM_POS).constrain_length(
+                        SLINGSHOT_ROPE_LENGTH
+                    )
+                    self.launch_bird(self.remaining_birds.pop(), delta * -9)
 
         self.screen_ui_container._propogate_on_mouse_up(*pos)
 
     def on_mouse_move(self, pos: tuple[int, int]):
+        if self.current_mode == GameMode.Play:
+            left_mouse_down, _, _ = mouse.get_pressed()
+            if left_mouse_down and not self.slingshot_engaged:
+                delta_x = pos[0] - SLINGSHOT_AIM_POS[0]
+                delta_y = pos[1] - SLINGSHOT_AIM_POS[1]
+
+                distance = math.sqrt(delta_x**2 + delta_y**2)
+
+                if distance < SLINGSHOT_ROPE_LENGTH:
+                    self.slingshot_engaged = True
+
         self.screen_ui_container._propogate_on_mouse_move(*pos)
 
     def on_key_down(self, key: str):
@@ -385,9 +430,9 @@ class TheGame(Game):
         entity = self.current_dragging_entity
         if entity is not None:
             if key == "e":
-                entity.body.angle += radians(45)
+                entity.body.angle += math.radians(45)
             elif key == "q":
-                entity.body.angle -= radians(45)
+                entity.body.angle -= math.radians(45)
 
         # if key == "n" and self.edit_snapshot is not None:
         #     objects.save_snapshots_to_file(self.edit_snapshot, "hi.json")

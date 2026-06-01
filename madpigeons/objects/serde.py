@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, TYPE_CHECKING
 import json
 
@@ -39,24 +41,6 @@ for module in [wood, stone, glass, special, bird, pig]:
             continue
 
         DECODE_SERIALIZE_MAP[f"{module_name}.{class_name}"] = class_type
-
-
-# def load_entity_from_json(entity_json: str, level: Level) -> Entity | None:
-#     json_object: dict = loads(entity_json)
-
-#     class_name: str | None = json_object.get("t", None)
-
-#     if class_name is None:
-#         return
-
-#     class_type = DECODE_SERIALIZE_MAP.get(class_name)
-
-#     if class_type is None:
-#         return
-
-#     entity_data: dict = json_object.get("d", {})
-
-#     return class_type.from_snapshot(level, entity_data)
 
 
 def load_entities_from_file(path: str, level: Level) -> list[Entity]:

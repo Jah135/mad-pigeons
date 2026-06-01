@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pymunk
 from typing import TYPE_CHECKING
 
