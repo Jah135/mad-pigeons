@@ -1,7 +1,4 @@
-from typing import Any
-
 import pygame
-import pymunk
 
 from pygame import mouse, key
 

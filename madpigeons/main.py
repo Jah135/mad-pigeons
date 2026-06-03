@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Callable
 from pygame import mouse, transform, draw
 
+from misc import calculate_kinematic_path, point_in_body
 from game import Game
 from ui import (
     GuiObject,
@@ -16,21 +17,23 @@ from ui import (
     Color,
     VerticalAlignment,
 )
+from constants import (
+    SLINGSHOT_ROPE_LENGTH,
+    SLINGSHOT_LAUNCH_SPEED,
+    SLINGSHOT_X,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+)
 import objects
 import assets
-
-WINDOW_SCALE = 1
-WINDOW_WIDTH = int(1000 * WINDOW_SCALE)
-WINDOW_HEIGHT = int(564 * WINDOW_SCALE)
 
 BACKGROUND_IMAGE = transform.smoothscale(
     assets.BACKGROUND_3, (WINDOW_WIDTH, WINDOW_HEIGHT)
 )
 SLINGSHOT_BACK_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_BACK, 0.7)
 SLINGSHOT_FRONT_IMAGE = transform.smoothscale_by(assets.SLINGSHOT_FRONT, 0.7)
-SLINGSHOT_POS = (160, WINDOW_HEIGHT - SLINGSHOT_BACK_IMAGE.height - 10)
+SLINGSHOT_POS = (SLINGSHOT_X, WINDOW_HEIGHT - SLINGSHOT_BACK_IMAGE.height - 10)
 SLINGSHOT_AIM_POS = (SLINGSHOT_POS[0] + 5, SLINGSHOT_POS[1] + 20)
-SLINGSHOT_ROPE_LENGTH = 90
 
 
 class GameMode(Enum):
@@ -116,12 +119,6 @@ HOTBAR_SLOT_SIZE = 60
 HOTBAR_SLOT_PADDING = 5
 
 
-def point_in_body(point: tuple[float, float], body: pymunk.Body):
-    for shape in body.shapes:
-        if shape.point_query(point).distance <= 0:
-            return True
-
-
 class TheGame(Game):
     window_width = WINDOW_WIDTH
     window_height = WINDOW_HEIGHT
@@ -133,7 +130,9 @@ class TheGame(Game):
     edit_snapshot: list[objects.EntitySnapshot] | None = None
     current_mode: GameMode = GameMode.Edit
     current_hotbar: str = ""
+
     slingshot_engaged: bool = False
+    slingshot_launch_velocity: Vec2 = Vec2()
 
     def set_mode(self, new_mode: GameMode):
         if new_mode == GameMode.Play:
@@ -326,9 +325,6 @@ class TheGame(Game):
 
                 self.current_level.space.reindex_shapes_for_body(body)
         elif self.current_mode == GameMode.Play:
-            if not self.slingshot_engaged:
-                pass
-
             self.current_level.update(dt)
             self.current_level.update_physics(dt)
 
@@ -357,13 +353,25 @@ class TheGame(Game):
                 out, "black", (SLINGSHOT_AIM_POS + Vec2(-10, 2)).xy, bird_pos.xy, 4
             )
 
+            path = calculate_kinematic_path(
+                Vec2(*SLINGSHOT_AIM_POS),
+                self.slingshot_launch_velocity,
+                Vec2(0, self.current_level.space.gravity.y),
+                total_time=2,
+            )
+            apex = min(
+                path, key=lambda p: p.y
+            )  # using min here because the highest point is technically the lowest (louis)
+
+            draw.lines(out, "black", False, [p.xy for p in path])
+            draw.circle(out, "red", apex.xy, 2)
+            draw.line(out, "red", (0, apex.y), (WINDOW_WIDTH, apex.y))
+
         # slingshot front
         out.blit(
             SLINGSHOT_FRONT_IMAGE,
             (SLINGSHOT_POS[0] - SLINGSHOT_FRONT_IMAGE.width * 0.7, SLINGSHOT_POS[1]),
         )
-
-        draw.circle(out, "blue", SLINGSHOT_AIM_POS, 4)
 
     def on_draw_interface(self, out: pygame.Surface):
         # out.blit(assets.SMALL_WOOD_BALL_0)
@@ -390,30 +398,34 @@ class TheGame(Game):
             if self.current_dragging_entity is not None:
                 self.current_dragging_entity = None
         elif self.current_mode == GameMode.Play:
-            # TODO: check if the mouse "activated" the slingshot and if so then launch the bird in the direction from the mouse to the slingshot
             if self.slingshot_engaged:
-
                 self.slingshot_engaged = False
 
                 if len(self.remaining_birds) > 0:
-                    delta = (Vec2(*pos) - SLINGSHOT_AIM_POS).constrain_length(
-                        SLINGSHOT_ROPE_LENGTH
+                    self.launch_bird(
+                        self.remaining_birds.pop(), self.slingshot_launch_velocity
                     )
-                    self.launch_bird(self.remaining_birds.pop(), delta * -9)
 
         self.screen_ui_container._propogate_on_mouse_up(*pos)
 
     def on_mouse_move(self, pos: tuple[int, int]):
         if self.current_mode == GameMode.Play:
             left_mouse_down, _, _ = mouse.get_pressed()
-            if left_mouse_down and not self.slingshot_engaged:
-                delta_x = pos[0] - SLINGSHOT_AIM_POS[0]
-                delta_y = pos[1] - SLINGSHOT_AIM_POS[1]
 
-                distance = math.sqrt(delta_x**2 + delta_y**2)
+            mouse_pos = Vec2(*pos)
+            slingshot_delta = mouse_pos - SLINGSHOT_AIM_POS
+
+            if left_mouse_down and not self.slingshot_engaged:
+                distance = slingshot_delta.length
 
                 if distance < SLINGSHOT_ROPE_LENGTH:
                     self.slingshot_engaged = True
+
+            if self.slingshot_engaged:
+                self.slingshot_launch_velocity = (
+                    slingshot_delta.constrain_length(SLINGSHOT_ROPE_LENGTH)
+                    * -SLINGSHOT_LAUNCH_SPEED
+                )
 
         self.screen_ui_container._propogate_on_mouse_move(*pos)
 
