@@ -23,6 +23,10 @@ class Vec2:
     def __ne__(self, value: object) -> bool:
         return not self.__eq__(value)
 
+    def __iter__(self):
+        yield self.x
+        yield self.y
+
     # Addition
     def __add__(self, other: Vec2 | PointLike) -> Vec2:
         if isinstance(other, Vec2):
@@ -110,7 +114,19 @@ class Vec2:
 
     @property
     def angle(self) -> float:
+        """
+        Returns the angle of this vector.
+        """
         return math.atan2(self.y, self.x)
+
+    def rotated(self, angle: float) -> Vec2:
+        """
+        Returns a copy of this vector that has been rotated counterclockwise by the specified angle.
+        """
+        ang_cos = math.cos(angle)
+        ang_sin = math.sin(angle)
+
+        return Vec2(self.x * ang_cos - self.y * ang_cos, self.x * ang_sin + self.y * ang_cos)
 
     def constrain_length(self, max_length: float, min_length: float = 0) -> Vec2:
         """

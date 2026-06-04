@@ -144,9 +144,8 @@ class TheGame(Game):
             self.slingshot_engaged = False
 
             self.edit_gui.visible = False
-            self.edit_gui.invalidate()
 
-            self.mode_button.set_image(assets.EDIT_BUTTON)
+            self.mode_button.image = assets.EDIT_BUTTON
         elif new_mode == GameMode.Edit:
             if self.edit_snapshot is not None:
                 self.current_level.load_snapshot(self.edit_snapshot)
@@ -154,9 +153,8 @@ class TheGame(Game):
             self.slingshot_engaged = False
 
             self.edit_gui.visible = True
-            self.edit_gui.invalidate()
 
-            self.mode_button.set_image(assets.PLAY_BUTTON)
+            self.mode_button.image = assets.PLAY_BUTTON
 
         self.current_mode = new_mode
 
@@ -217,11 +215,9 @@ class TheGame(Game):
 
             def mouse_enter(*_, label=hover_name_label):
                 label.visible = True
-                label.invalidate()
 
             def mouse_leave(*_, label=hover_name_label):
                 label.visible = False
-                label.invalidate()
 
             def mouse_down(*_, item=item):
                 new_entity = item.create_entity(self.current_level)
@@ -357,13 +353,15 @@ class TheGame(Game):
                 Vec2(*SLINGSHOT_AIM_POS),
                 self.slingshot_launch_velocity,
                 Vec2(0, self.current_level.space.gravity.y),
-                total_time=2,
+                total_time=3,
             )
             apex = min(
                 path, key=lambda p: p.y
             )  # using min here because the highest point is technically the lowest (louis)
 
-            draw.lines(out, "black", False, [p.xy for p in path])
+            # draw.lines(out, "black", False, [p.xy for p in path])
+            for point in path:
+                draw.circle(out, "gray", point.xy, 4)
             draw.circle(out, "red", apex.xy, 2)
             draw.line(out, "red", (0, apex.y), (WINDOW_WIDTH, apex.y))
 
@@ -391,7 +389,7 @@ class TheGame(Game):
         elif self.current_mode == GameMode.Play:
             self.mouse_down_start_position = pos
 
-        self.screen_ui_container._propogate_on_mouse_down(*pos)
+        self.screen_ui_container._propagate_on_mouse_down(*pos)
 
     def on_mouse_left_up(self, pos: tuple[int, int]):
         if self.current_mode == GameMode.Edit:
@@ -406,7 +404,7 @@ class TheGame(Game):
                         self.remaining_birds.pop(), self.slingshot_launch_velocity
                     )
 
-        self.screen_ui_container._propogate_on_mouse_up(*pos)
+        self.screen_ui_container._propagate_on_mouse_up(*pos)
 
     def on_mouse_move(self, pos: tuple[int, int]):
         if self.current_mode == GameMode.Play:
@@ -427,7 +425,7 @@ class TheGame(Game):
                     * -SLINGSHOT_LAUNCH_SPEED
                 )
 
-        self.screen_ui_container._propogate_on_mouse_move(*pos)
+        self.screen_ui_container._propagate_on_mouse_move(*pos)
 
     def on_key_down(self, key: str):
         if key == "1":

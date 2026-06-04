@@ -11,35 +11,44 @@ from ..enums import UIState
 class GuiObject:
     """An abstract class for all UI objects"""
 
-    parent: "GuiObject | None"
-    children: set["GuiObject"]
+    _parent: GuiObject | None
+    _anchor_point: Vec2
+    _position: UDim2
+    _size: UDim2
+    _visible: bool
+    _clips_descendants: bool = False
 
-    anchor_point: Vec2
-    position: UDim2
-    size: UDim2
-    visible: bool
-    clips_descendants: bool = False
+    _is_stale: bool
+    _rawtexture: Surface
 
-    is_stale: bool
-    texture: Surface
+    mouse_state: UIState
+
+    children: set[GuiObject]
+
+    mouse_down: EventSignal
+    mouse_up: EventSignal
+    mouse_enter: EventSignal
+    mouse_leave: EventSignal
 
     def __init__(
         self,
-        parent: "GuiObject | None" = None,
+        parent: GuiObject | None = None,
+        *,
         anchor_point: Vec2 = Vec2(),
         position: UDim2 = UDim2(),
         size: UDim2 = UDim2(),
     ) -> None:
-        self.parent = None
+        self._parent = None
+        self._anchor_point = anchor_point
+        self._position = position
+        self._size = size
+        self._visible = True
+        self._is_stale = True
+
+        self.mouse_state = UIState.Idle
+
         self.children = set()
-
-        self.anchor_point = anchor_point
-        self.position = position
-        self.size = size
-        self.visible = True
-
-        self.state = UIState.Idle
-        self.is_stale = True
+        self.parent = parent
 
         # signals
         self.mouse_down = EventSignal()
@@ -47,50 +56,108 @@ class GuiObject:
         self.mouse_enter = EventSignal()
         self.mouse_leave = EventSignal()
 
-        self.set_parent(parent)
 
+    # properties
+
+    @property
+    def parent(self) -> GuiObject | None:
+        return self._parent
+    
+    @parent.setter
+    def parent(self, new_parent: GuiObject | None):
+        self.invalidate()
+
+        old_parent = self._parent
+
+        if old_parent is not None:
+            old_parent.children.remove(self)
+            old_parent.invalidate()
+
+        self._parent = new_parent
+
+        if new_parent is not None:
+            new_parent.children.add(self)
+            new_parent.invalidate()
+    
+    @property
+    def anchor_point(self) -> Vec2:
+        return self._anchor_point
+
+    @anchor_point.setter
+    def anchor_point(self, new_value: Vec2):
+        self._anchor_point = new_value
+        self.invalidate()
+    
+    @property
+    def position(self) -> UDim2:
+        return self._position
+    
+    @position.setter
+    def position(self, new_value: UDim2):
+        self._position = new_value
+        self.invalidate()
+    
+    @property
+    def size(self):
+        return self._size
+    
+    @size.setter
+    def size(self, new_value: UDim2):
+        self._size = new_value
+        self.invalidate()
+    
+    @property
+    def visible(self) -> bool:
+        return self._visible
+    
+    @visible.setter
+    def visible(self, new_value: bool):
+        self._visible = new_value
+        self.invalidate()
+    
+    @property
+    def clips_descendants(self) -> bool:
+        return self._clips_descendants
+    
+    @clips_descendants.setter
+    def clips_descendants(self, new_value: bool):
+        self._clips_descendants = new_value
+        self.invalidate()
+
+    # derived properties
     @property
     def absolute_size(self) -> Vec2:
         """The absolute size of this GuiObject, in pixels as a Vec2."""
 
-        if self.parent == None:
-            return self.size.offsets
+        if self._parent == None:
+            return self._size.offsets
 
-        return self.size.offsets + self.size.scales * self.parent.absolute_size
+        return self._size.offsets + self._size.scales * self._parent.absolute_size
 
     @property
     def absolute_position(self) -> Vec2:
         """The absolute position of this GuiObject, relative to it's oldest ancestor, in pixels as a Vec2."""
 
-        if self.parent == None:
-            return self.position.offsets
+        if self._parent == None:
+            return self._position.offsets
 
         return (
-            self.parent.absolute_position
-            + self.position.offsets
-            + self.parent.absolute_size * self.position.scales
-        ) - (self.absolute_size * self.anchor_point)
-
-    @property
-    def relative_position(self) -> Vec2:
-        """The relative position of this GuiObject to it's parent, in pixels as a Vec2."""
-
-        if self.parent == None:
-            return self.position.offsets
-
-        return self.absolute_position - self.parent.absolute_position
+            self._parent.absolute_position
+            + self._position.offsets
+            + self._parent.absolute_size * self._position.scales
+        ) - (self.absolute_size * self._anchor_point)
 
     @property
     def content_bounds(self) -> Rect:
         """The bounds of this GuiObject, including all of it's descendants, relative to it's oldest ancestor."""
-        if self.clips_descendants:
+        if self._clips_descendants:
             return self.bounds
 
         top_left = self.absolute_position
         size = self.absolute_size
 
         for child in self.children:
-            if not child.visible:
+            if not child._visible:
                 continue
 
             child_bounds = child.content_bounds
@@ -112,37 +179,10 @@ class GuiObject:
     def modern_texture(self) -> Surface:
         """Guaranteed to be the most up to date texture for rendering."""
 
-        if self.is_stale:
+        if self._is_stale:
             self._reconcile()
 
-        return self.texture
-
-    @property
-    def is_visible(self) -> bool:
-        """Returns whether this GuiObject is visible, based off of whether it's ancestor's are visible."""
-
-        if not self.visible:
-            return False
-
-        for ancestor in self.get_ancestors():
-            if not ancestor.visible:
-                return False
-
-        return True
-
-    # actual methods you might be using
-    def get_ancestors(self) -> list[GuiObject]:
-        ancestors = []
-        current = self
-
-        while True:
-            current = current.parent
-
-            if current is None:
-                break
-            ancestors.append(current)
-
-        return ancestors
+        return self._rawtexture
 
     def invalidate(self):
         """
@@ -151,20 +191,13 @@ class GuiObject:
         ask me about push-pull based reactive signals
         """
 
-        if self.is_stale:
+        if self._is_stale:
             return
 
-        self.is_stale = True
+        self._is_stale = True
 
-        if self.parent is not None:
-            self.parent.invalidate()
-
-    def invalidate_parent(self):
-        """
-        Marks this GuiObject's parent as stale.
-        """
-        if self.parent is not None:
-            self.parent.invalidate()
+        if self._parent is not None:
+            self._parent.invalidate()
 
     def draw_to(self, out: Surface):
         out.blit(self.modern_texture, self.content_bounds)
@@ -172,31 +205,16 @@ class GuiObject:
     def debug_draw_descendants(self, out: Surface):
         draw.rect(out, "red", self.bounds, 1)
         draw.circle(out, "red", self.absolute_position.xy, 2)
-        draw.rect(out, "yellow" if self.is_visible else "black", self.content_bounds, 1)
+        # draw.rect(out, "yellow" if self.is_visible else "black", self.content_bounds, 1)
         draw.circle(out, "yellow", self.content_bounds.topleft, 2)
 
         for child in self.children:
             child.debug_draw_descendants(out)
 
-    def set_parent(self, new_parent: "GuiObject | None"):
-        """Sets the parent of this GuiObject."""
-
-        self.invalidate()
-
-        current_parent = self.parent
-
-        if current_parent is not None:
-            current_parent.children.remove(self)
-
-        self.parent = new_parent
-
-        if new_parent is not None:
-            new_parent.children.add(self)
-
     def clear_children(self):
         """Removes all GuiObjects parented directly under this GuiObject."""
         for child in self.children:
-            child.parent = None
+            child._parent = None
 
         self.children.clear()
         self.invalidate()
@@ -215,45 +233,45 @@ class GuiObject:
         )
 
     # event entry points
-    def _propogate_on_mouse_down(self, x: int, y: int):
-        if not self.visible:
+    def _propagate_on_mouse_down(self, x: int, y: int):
+        if not self._visible:
             return
 
-        if self.state == UIState.Hover:
-            self.state = UIState.Press
+        if self.mouse_state == UIState.Hover:
+            self.mouse_state = UIState.Press
             self.mouse_down.fire(x, y)
 
         # propogate to children
         for child in self.children:
-            child._propogate_on_mouse_down(x, y)
+            child._propagate_on_mouse_down(x, y)
 
-    def _propogate_on_mouse_up(self, x: int, y: int):
-        if not self.visible:
+    def _propagate_on_mouse_up(self, x: int, y: int):
+        if not self._visible:
             return
 
-        if self.state == UIState.Press:
-            self.state = UIState.Hover
+        if self.mouse_state == UIState.Press:
+            self.mouse_state = UIState.Hover
             self.mouse_up.fire(x, y)
 
         # propogate to children
         for child in self.children:
-            child._propogate_on_mouse_up(x, y)
+            child._propagate_on_mouse_up(x, y)
 
-    def _propogate_on_mouse_move(self, x: int, y: int):
-        if not self.visible:
+    def _propagate_on_mouse_move(self, x: int, y: int):
+        if not self._visible:
             return
 
         if self.check_is_in_bounds(x, y):
-            if self.state == UIState.Idle:
-                self.state = UIState.Hover
+            if self.mouse_state == UIState.Idle:
+                self.mouse_state = UIState.Hover
                 self.mouse_enter.fire(x, y)
-        elif self.state != UIState.Idle:
-            self.state = UIState.Idle
+        elif self.mouse_state != UIState.Idle:
+            self.mouse_state = UIState.Idle
             self.mouse_leave.fire(x, y)
 
         # propogate to children
         for child in self.children:
-            child._propogate_on_mouse_move(x, y)
+            child._propagate_on_mouse_move(x, y)
 
     # rendering stuff
     def _reconcile(self):
@@ -269,8 +287,8 @@ class GuiObject:
         )
 
         for child in self.children:
-            if not child.visible:
-                child.is_stale = False
+            if not child._visible:
+                child._is_stale = False
                 continue
 
             contents_texture.blit(
@@ -278,8 +296,8 @@ class GuiObject:
                 (Vec2(*child.content_bounds.topleft) - full_bounds.topleft).xy,
             )
 
-        self.texture = contents_texture
-        self.is_stale = False
+        self._rawtexture = contents_texture
+        self._is_stale = False
 
     def render(self, render_texture: Surface):
         """
